@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0077b5" />
+      <stop offset="100%" style="stop-color:#00a0dc" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bg)"/>
+  
+  <!-- Terminal window -->
+  <rect x="40" y="40" width="720" height="420" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  
+  <!-- Title bar -->
+  <rect x="40" y="40" width="720" height="35" rx="10" fill="#161b22"/>
+  <circle cx="65" cy="57" r="6" fill="#ff5f56"/>
+  <circle cx="85" cy="57" r="6" fill="#ffbd2e"/>
+  <circle cx="105" cy="57" r="6" fill="#27c93f"/>
+  <text x="400" y="62" font-family="monospace" font-size="12" fill="#8b949e" text-anchor="middle">LinkedIn AI Agent - Terminal</text>
+  
+  <!-- Terminal content -->
+  <text x="60" y="100" font-family="monospace" font-size="14" fill="#8b949e">$ python -m src.cli.main</text>
+  
+  <!-- Logo ASCII art -->
+  <text x="60" y="130" font-family="monospace" font-size="10" fill="#58a6ff">╔═══════════════════════════════════════════════════════════════╗</text>
+  <text x="60" y="145" font-family="monospace" font-size="10" fill="#58a6ff">║    🚀 LinkedIn AI Agent - Transform Ideas into Viral Posts    ║</text>
+  <text x="60" y="160" font-family="monospace" font-size="10" fill="#58a6ff">╚═══════════════════════════════════════════════════════════════╝</text>
+  
+  <!-- User input -->
+  <text x="60" y="190" font-family="monospace" font-size="12" fill="#7ee787">?</text>
+  <text x="80" y="190" font-family="monospace" font-size="12" fill="#c9d1d9">Enter your post idea:</text>
+  <text x="60" y="210" font-family="monospace" font-size="12" fill="#f0f6fc">> 3 lessons I learned from failing my first startup</text>
+  
+  <!-- Processing -->
+  <text x="60" y="245" font-family="monospace" font-size="12" fill="#8b949e">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</text>
+  <text x="60" y="265" font-family="monospace" font-size="12" fill="#a5d6ff">⏳ Running Validator Agent...</text>
+  <text x="300" y="265" font-family="monospace" font-size="12" fill="#7ee787">✓ APPROVED (8.5/10)</text>
+  <text x="60" y="285" font-family="monospace" font-size="12" fill="#a5d6ff">⏳ Running Strategist Agent...</text>
+  <text x="300" y="285" font-family="monospace" font-size="12" fill="#7ee787">✓ Format: Text</text>
+  <text x="60" y="305" font-family="monospace" font-size="12" fill="#a5d6ff">⏳ Running Writer Agent...</text>
+  <text x="300" y="305" font-family="monospace" font-size="12" fill="#7ee787">✓ 3 hooks generated</text>
+  <text x="60" y="325" font-family="monospace" font-size="12" fill="#a5d6ff">⏳ Running Optimizer Agent...</text>
+  <text x="300" y="325" font-family="monospace" font-size="12" fill="#7ee787">✓ Quality: 8.7/10</text>
+  
+  <!-- Result -->
+  <text x="60" y="360" font-family="monospace" font-size="12" fill="#8b949e">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</text>
+  <text x="60" y="380" font-family="monospace" font-size="12" fill="#ffa657">📝 Generated Hook:</text>
+  <text x="60" y="400" font-family="monospace" font-size="12" fill="#f0f6fc">"I burned through $500K before learning this one lesson."</text>
+  <text x="60" y="425" font-family="monospace" font-size="12" fill="#7ee787">📊 Predicted: 5K-15K impressions | 4.5% engagement</text>
+  
+  <!-- Blinking cursor -->
+  <rect x="60" y="438" width="8" height="14" fill="#58a6ff">
+    <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/>
+  </rect>
+</svg>
