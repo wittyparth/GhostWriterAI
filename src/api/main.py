@@ -1,7 +1,7 @@
 """
 FastAPI application for LinkedIn AI Agent.
 
-Provides REST endpoints for post generation.
+Provides REST endpoints for post generation with rate limiting and health checks.
 """
 
 import logging
@@ -24,35 +24,53 @@ from src.models.schemas import (
 )
 from src.orchestration import run_generation, continue_generation, AgentState
 from src.api.routes.posts import router as posts_router
+from src.api.middleware.rate_limit import RateLimitMiddleware
+from src.services.health import get_health_service
+from src.services.cache import get_cache_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
-
-# In-memory state store (use Redis in production)
-_generation_states: dict[str, AgentState] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info("Starting LinkedIn AI Agent API")
+    
+    # Initialize database
     db = get_db_manager()
     try:
         await db.create_tables()
+        logger.info("Database tables ready")
     except Exception as e:
         logger.warning(f"Could not create tables: {e}")
+    
+    # Initialize cache
+    cache = get_cache_service()
+    try:
+        await cache.connect()
+        logger.info("Cache connected")
+    except Exception as e:
+        logger.warning(f"Could not connect to cache: {e}")
+    
     yield
+    
+    # Cleanup
     await db.close()
+    await cache.disconnect()
     logger.info("Shutting down LinkedIn AI Agent API")
 
 
 app = FastAPI(
     title="LinkedIn AI Agent",
-    description="Multi-agent AI system for LinkedIn content generation",
+    description="Multi-agent AI system for LinkedIn content generation powered by Google Gemini",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
+# Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -60,100 +78,54 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RateLimitMiddleware, requests_per_minute=30)
 
 # Include routers
 app.include_router(posts_router)
 
 
-@app.get("/health", response_model=HealthResponse)
+@app.get("/health", response_model=HealthResponse, tags=["system"])
 async def health_check():
-    """Check API health."""
+    """
+    Basic health check endpoint.
+    
+    Returns simple status without checking dependencies.
+    """
     return HealthResponse(status="healthy", version="0.1.0")
 
 
-@app.post("/api/v1/posts/generate")
-async def generate_post(request: IdeaInput):
+@app.get("/health/detailed", tags=["system"])
+async def detailed_health_check():
     """
-    Start post generation from an idea.
+    Detailed health check with all component statuses.
     
-    Returns clarifying questions that need to be answered.
+    Checks database, cache, and LLM connectivity.
     """
-    post_id = str(uuid4())
+    health_service = get_health_service()
+    result = await health_service.check_all()
     
-    try:
-        state = await run_generation(
-            raw_idea=request.raw_idea,
-            brand_profile={},
-        )
-        
-        # Check if rejected
-        if state.get("validator_output", {}).get("decision") == "REJECT":
-            return {
-                "post_id": post_id,
-                "status": "rejected",
-                "reason": state["validator_output"].get("reasoning"),
-                "suggestions": state["validator_output"].get("refinement_suggestions", []),
+    return {
+        "status": result.status,
+        "version": result.version,
+        "components": [
+            {
+                "name": c.name,
+                "status": c.status,
+                "message": c.message,
+                "latency_ms": c.latency_ms,
             }
-        
-        # Store state for continuation
-        _generation_states[post_id] = state
-        
-        return ClarifyingQuestionsResponse(
-            post_id=post_id,
-            questions=state.get("clarifying_questions", []),
-            original_idea=request.raw_idea,
-        )
-        
-    except Exception as e:
-        logger.error(f"Generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            for c in result.components
+        ],
+    }
 
 
-@app.post("/api/v1/posts/{post_id}/answers")
-async def submit_answers(post_id: str, request: SubmitAnswersRequest):
-    """
-    Submit answers to clarifying questions and complete generation.
-    """
-    if post_id not in _generation_states:
-        raise HTTPException(status_code=404, detail="Post not found")
-    
-    state = _generation_states[post_id]
-    
-    # Convert answers to dict
-    answers = {a.question_id: a.answer for a in request.answers}
-    
-    try:
-        final_state = await continue_generation(state, answers)
-        
-        # Clean up
-        del _generation_states[post_id]
-        
-        return {
-            "post_id": post_id,
-            "status": "completed",
-            "post": final_state.get("final_post"),
-            "execution_log": final_state.get("execution_log", []),
-        }
-        
-    except Exception as e:
-        logger.error(f"Continuation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/v1/posts/{post_id}/status")
-async def get_status(post_id: str):
-    """Get generation status."""
-    if post_id not in _generation_states:
-        return GenerationStatusResponse(
-            post_id=post_id,
-            status="completed",
-            progress_percent=100,
-        )
-    
-    state = _generation_states[post_id]
-    return GenerationStatusResponse(
-        post_id=post_id,
-        status=state.get("status", "processing"),
-        current_agent=state.get("current_agent"),
-        progress_percent=50 if state.get("status") == "awaiting_answers" else 25,
-    )
+@app.get("/", tags=["system"])
+async def root():
+    """API root endpoint."""
+    return {
+        "name": "LinkedIn AI Agent",
+        "version": "0.1.0",
+        "description": "Multi-agent AI system for LinkedIn content generation",
+        "docs": "/docs",
+        "health": "/health",
+    }
