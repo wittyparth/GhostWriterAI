@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     
     # Model configuration
     gemini_model: str = Field(
-        default="gemini-3-flash-preview",
-        description="Gemini model to use for generation",
+        default="gemini-2.0-flash",
+        description="Gemini model to use for generation (free tier: gemini-1.5-flash)",
     )
     embedding_model: str = Field(
         default="text-embedding-004",
@@ -38,15 +38,16 @@ class Settings(BaseSettings):
     )
     
     # ========== Database Configuration ==========
-    database_url: SecretStr = Field(
-        ...,
-        description="PostgreSQL connection string",
+    # Made optional with SQLite fallback for development
+    database_url: SecretStr | None = Field(
+        default=None,
+        description="PostgreSQL connection string (optional, uses SQLite if not provided)",
     )
     
     # ========== Redis Configuration ==========
-    redis_url: str = Field(
-        default="redis://localhost:6379",
-        description="Redis connection URL for caching",
+    redis_url: str | None = Field(
+        default=None,
+        description="Redis connection URL for caching (optional, uses in-memory if not provided)",
     )
     
     # ========== Vector Store Configuration ==========
@@ -117,9 +118,29 @@ class Settings(BaseSettings):
         return self.app_env == "production"
 
     @property
+    def use_sqlite(self) -> bool:
+        """Check if using SQLite (no database URL or development mode)."""
+        if self.database_url is None:
+            return True
+        # Check if it's explicitly a SQLite URL
+        url = self.database_url.get_secret_value()
+        return url.startswith("sqlite")
+
+    @property
     def database_url_async(self) -> str:
         """Get async database URL for SQLAlchemy."""
+        if self.database_url is None:
+            # Use SQLite for development
+            return "sqlite+aiosqlite:///./data/linkedin_ai.db"
+        
         url = self.database_url.get_secret_value()
+        
+        # Handle SQLite URLs
+        if url.startswith("sqlite"):
+            if "+aiosqlite" not in url:
+                return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+            return url
+        
         # Convert postgresql:// to postgresql+asyncpg:// for async support
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+asyncpg://", 1)
@@ -128,7 +149,17 @@ class Settings(BaseSettings):
     @property
     def database_url_sync(self) -> str:
         """Get sync database URL for migrations."""
+        if self.database_url is None:
+            # Use SQLite for development
+            return "sqlite:///./data/linkedin_ai.db"
+        
         url = self.database_url.get_secret_value()
+        
+        # Handle SQLite URLs
+        if url.startswith("sqlite"):
+            # Remove async driver for sync operations
+            return url.replace("+aiosqlite", "")
+        
         # Ensure it's the standard postgresql:// format
         if url.startswith("postgresql+asyncpg://"):
             return url.replace("postgresql+asyncpg://", "postgresql://", 1)

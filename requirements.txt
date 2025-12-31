@@ -4,17 +4,18 @@ uvicorn
 pydantic
 pydantic-settings
 
-# LLM and AI
-google-generativeai
+# LLM and AI - Using new google-genai package (replacement for deprecated google-generativeai)
+google-genai
 langchain
 langchain-google-genai
 langgraph
 
-# RAG and Vector Store - use sqlite version to avoid build issues
+# RAG and Vector Store
 chromadb
 
 # Database
 sqlalchemy[asyncio]
+aiosqlite
 asyncpg
 alembic
 psycopg2-binary

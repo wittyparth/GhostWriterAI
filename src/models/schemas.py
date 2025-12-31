@@ -242,7 +242,7 @@ class StrategistOutput(BaseSchema):
     psychological_triggers: list[str]
     tone: str
     clarifying_questions: list[ClarifyingQuestion]
-    similar_posts: list[dict[str, Any]] = Field(default_factory=list)
+    similar_posts: list[str] = Field(default_factory=list)  # Changed to list of strings
 
 
 class WriterOutput(BaseSchema):

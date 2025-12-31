@@ -12,7 +12,7 @@ from typing import Any, TypeVar, Generic
 
 from pydantic import BaseModel
 
-from src.llm.gemini import GeminiClient, GeminiModel, get_gemini_client
+from src.llm.gemini import GeminiClient, get_gemini_client
 from src.config.settings import get_settings
 
 logger = logging.getLogger(__name__)
@@ -33,14 +33,13 @@ class BaseAgent(ABC, Generic[T]):
     """
     
     agent_name: str = "base"
-    default_model: GeminiModel = GeminiModel.GEMINI_3_FLASH
     max_retries: int = 3
     retry_delay: float = 1.0
     
     def __init__(self, llm_client: GeminiClient | None = None):
         self.llm = llm_client or get_gemini_client()
         self.settings = get_settings()
-    
+        
     @property
     @abstractmethod
     def system_prompt(self) -> str:
@@ -99,28 +98,28 @@ class BaseAgent(ABC, Generic[T]):
         self,
         prompt: str,
         output_schema: dict[str, Any] | None = None,
-        model: GeminiModel | None = None,
+        model: str | None = None,
     ) -> dict[str, Any]:
         """Generate structured JSON output from LLM."""
         return await self.llm.generate_json(
             prompt=prompt,
             system_instruction=self.system_prompt,
             response_schema=output_schema,
-            model=model or self.default_model,
+            model=model,
         )
     
     async def generate_text(
         self,
         prompt: str,
         temperature: float = 0.7,
-        model: GeminiModel | None = None,
+        model: str | None = None,
     ) -> str:
         """Generate free-form text output from LLM."""
         return await self.llm.generate(
             prompt=prompt,
             system_instruction=self.system_prompt,
             temperature=temperature,
-            model=model or self.default_model,
+            model=model,
         )
     
     def get_token_usage(self) -> dict[str, int]:

@@ -8,10 +8,13 @@ import logging
 from typing import Any
 import hashlib
 
-from src.llm.gemini import get_gemini_client, EmbeddingModel
+from src.llm.gemini import get_gemini_client
 from src.config.constants import EMBEDDING_DIMENSION
 
 logger = logging.getLogger(__name__)
+
+# Default embedding model
+DEFAULT_EMBEDDING_MODEL = "text-embedding-004"
 
 
 class EmbeddingService:
@@ -24,7 +27,7 @@ class EmbeddingService:
     - Configurable embedding model
     """
     
-    def __init__(self, model: EmbeddingModel = EmbeddingModel.TEXT_EMBEDDING_004):
+    def __init__(self, model: str = DEFAULT_EMBEDDING_MODEL):
         self.client = get_gemini_client()
         self.model = model
         self._cache: dict[str, list[float]] = {}

@@ -1,17 +1,16 @@
 """
 Google Gemini API client wrapper.
 
-Provides async interface for text generation and embeddings using Gemini models.
-Supports swappable models: Gemini 3 Flash, Gemini 3 Pro, Gemini 2.5 Flash, etc.
+Provides async interface for text generation and embeddings.
+Uses the model specified in .env (GEMINI_MODEL), falls back to gemini-2.5-flash.
 """
 
 import json
 import logging
-from enum import Enum
 from typing import Any
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+from google import genai
+from google.genai import types
 
 from src.config.settings import get_settings
 from src.config.constants import (
@@ -22,135 +21,41 @@ from src.config.constants import (
 
 logger = logging.getLogger(__name__)
 
-
-class GeminiModel(str, Enum):
-    """Available Gemini models for generation."""
-    
-    # Gemini 3 models (latest)
-    GEMINI_3_FLASH = "gemini-3-flash-preview"
-    GEMINI_3_PRO = "gemini-3-pro-preview"
-    
-    # Gemini 2.5 models
-    GEMINI_25_FLASH = "gemini-2.5-flash"
-    GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite"
-    GEMINI_25_PRO = "gemini-2.5-pro"
-    
-    # Gemini 2.0 models (stable)
-    GEMINI_20_FLASH = "gemini-2.0-flash"
-    GEMINI_20_FLASH_LITE = "gemini-2.0-flash-lite"
-
-
-class EmbeddingModel(str, Enum):
-    """Available embedding models."""
-    
-    TEXT_EMBEDDING_004 = "text-embedding-004"  # Latest, 768 dimensions
-    TEXT_EMBEDDING_005 = "text-embedding-005"  # If available
-
-
-# Model cost mapping (USD per 1M tokens) - approximate
-MODEL_COSTS = {
-    GeminiModel.GEMINI_3_FLASH: {"input": 0.075, "output": 0.30},
-    GeminiModel.GEMINI_3_PRO: {"input": 0.50, "output": 2.00},
-    GeminiModel.GEMINI_25_FLASH: {"input": 0.075, "output": 0.30},
-    GeminiModel.GEMINI_25_PRO: {"input": 1.25, "output": 5.00},
-    GeminiModel.GEMINI_20_FLASH: {"input": 0.075, "output": 0.30},
-}
+# Default fallback model
+DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_EMBEDDING_MODEL = "text-embedding-004"
 
 
 class GeminiClient:
     """
-    Client for Google Gemini API with structured output support.
+    Simple client for Google Gemini API.
     
-    Supports multiple Gemini models with easy swapping.
-    Default: Gemini 3 Flash Preview (fastest and most capable).
-    
-    Usage:
-        client = GeminiClient()
-        
-        # Use default model (Flash)
-        response = await client.generate("Hello")
-        
-        # Use Pro for complex reasoning
-        response = await client.generate("Complex task", model=GeminiModel.GEMINI_3_PRO)
-        
-        # Switch default model
-        client.set_default_model(GeminiModel.GEMINI_3_PRO)
+    Uses model from settings (GEMINI_MODEL env var).
+    Falls back to gemini-2.5-flash if not specified.
     """
 
-    def __init__(
-        self,
-        default_model: GeminiModel | str | None = None,
-        embedding_model: EmbeddingModel | str | None = None,
-    ):
+    def __init__(self, model: str | None = None):
         """
-        Initialize the Gemini client with API key from settings.
+        Initialize the Gemini client.
         
         Args:
-            default_model: Default model to use (overrides settings)
-            embedding_model: Embedding model to use (overrides settings)
+            model: Override model name (optional)
         """
         self.settings = get_settings()
-        genai.configure(api_key=self.settings.gemini_api_key.get_secret_value())
         
-        # Set default models
-        if default_model:
-            self.default_model = GeminiModel(default_model) if isinstance(default_model, str) else default_model
-        else:
-            self.default_model = GeminiModel(self.settings.gemini_model)
-            
-        if embedding_model:
-            self.embedding_model = EmbeddingModel(embedding_model) if isinstance(embedding_model, str) else embedding_model
-        else:
-            self.embedding_model = EmbeddingModel(self.settings.embedding_model)
+        # Initialize client with API key
+        self.client = genai.Client(api_key=self.settings.gemini_api_key.get_secret_value())
         
-        # Cache for initialized models
-        self._model_cache: dict[str, genai.GenerativeModel] = {}
+        # Use provided model, or from settings, or default
+        self.model = model or self.settings.gemini_model or DEFAULT_MODEL
+        self.embedding_model = self.settings.embedding_model or DEFAULT_EMBEDDING_MODEL
         
-        # Track token usage for cost monitoring
+        # Token tracking
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.total_embedding_tokens = 0
         
-        logger.info(f"GeminiClient initialized with model: {self.default_model.value}")
-
-    def set_default_model(self, model: GeminiModel | str) -> None:
-        """
-        Change the default model.
-        
-        Args:
-            model: New default model
-        """
-        self.default_model = GeminiModel(model) if isinstance(model, str) else model
-        logger.info(f"Default model changed to: {self.default_model.value}")
-
-    def _get_model(
-        self,
-        model: GeminiModel | str | None = None,
-        system_instruction: str | None = None,
-    ) -> genai.GenerativeModel:
-        """
-        Get or create a GenerativeModel instance.
-        
-        Args:
-            model: Model to use (defaults to self.default_model)
-            system_instruction: Optional system instruction
-            
-        Returns:
-            GenerativeModel instance
-        """
-        model_enum = GeminiModel(model) if isinstance(model, str) else (model or self.default_model)
-        model_name = model_enum.value
-        
-        # Create cache key including system instruction
-        cache_key = f"{model_name}:{hash(system_instruction or '')}"
-        
-        if cache_key not in self._model_cache:
-            self._model_cache[cache_key] = genai.GenerativeModel(
-                model_name=model_name,
-                system_instruction=system_instruction,
-            )
-        
-        return self._model_cache[cache_key]
+        logger.info(f"GeminiClient initialized with model: {self.model}")
 
     async def generate(
         self,
@@ -159,62 +64,55 @@ class GeminiClient:
         temperature: float = 0.7,
         max_output_tokens: int = 4096,
         response_schema: dict[str, Any] | None = None,
-        model: GeminiModel | str | None = None,
+        model: str | None = None,
     ) -> str:
         """
         Generate text response from Gemini.
         
         Args:
             prompt: The user prompt
-            system_instruction: Optional system instruction for context
+            system_instruction: System instruction for context
             temperature: Sampling temperature (0-2)
-            max_output_tokens: Maximum tokens in response
-            response_schema: Optional JSON schema for structured output
-            model: Specific model to use (overrides default)
+            max_output_tokens: Maximum output tokens
+            response_schema: JSON schema for structured output
+            model: Override model for this call
             
         Returns:
-            Generated text response
+            Generated text
         """
         try:
-            # Get model (uses default if not specified)
-            gen_model = self._get_model(model=model, system_instruction=system_instruction)
+            model_name = model or self.model
 
-            # Configure generation
-            generation_config = GenerationConfig(
+            # Build config
+            config = types.GenerateContentConfig(
                 temperature=temperature,
                 max_output_tokens=max_output_tokens,
             )
             
-            # Add response schema for structured output
+            if system_instruction:
+                config.system_instruction = system_instruction
+            
             if response_schema:
-                generation_config = GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    response_mime_type="application/json",
-                    response_schema=response_schema,
-                )
+                config.response_mime_type = "application/json"
+                config.response_schema = response_schema
 
-            # Generate response
-            response = await gen_model.generate_content_async(
-                prompt,
-                generation_config=generation_config,
+            # Generate
+            response = await self.client.aio.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=config,
             )
 
-            # Track token usage
-            if hasattr(response, 'usage_metadata'):
-                self.total_input_tokens += response.usage_metadata.prompt_token_count
-                self.total_output_tokens += response.usage_metadata.candidates_token_count
-                logger.debug(
-                    f"Tokens used - Input: {response.usage_metadata.prompt_token_count}, "
-                    f"Output: {response.usage_metadata.candidates_token_count}"
-                )
+            # Track tokens
+            if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                self.total_input_tokens += response.usage_metadata.prompt_token_count or 0
+                self.total_output_tokens += response.usage_metadata.candidates_token_count or 0
 
             return response.text
 
         except Exception as e:
             logger.error(f"Gemini generation failed: {e}")
             raise
-
 
     async def generate_json(
         self,
@@ -223,22 +121,9 @@ class GeminiClient:
         temperature: float = 0.3,
         max_output_tokens: int = 4096,
         response_schema: dict[str, Any] | None = None,
-        model: GeminiModel | str | None = None,
+        model: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Generate a JSON response from Gemini.
-        
-        Args:
-            prompt: The user prompt
-            system_instruction: Optional system instruction
-            temperature: Lower temperature for more deterministic JSON
-            max_output_tokens: Maximum tokens in response
-            response_schema: Optional JSON schema for validation
-            
-        Returns:
-            Parsed JSON dictionary
-        """
-        # Enhance prompt for JSON output
+        """Generate a JSON response."""
         json_prompt = prompt
         if not response_schema:
             json_prompt = f"{prompt}\n\nRespond ONLY with valid JSON, no other text."
@@ -253,86 +138,43 @@ class GeminiClient:
         )
         
         try:
-            # Parse JSON response
             return json.loads(response_text)
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.debug(f"Raw response: {response_text[:500]}")
-            raise ValueError(f"Invalid JSON response from Gemini: {e}")
+            logger.error(f"Failed to parse JSON: {e}")
+            raise ValueError(f"Invalid JSON from Gemini: {e}")
 
-    async def embed(
-        self,
-        texts: list[str],
-        task_type: str = "retrieval_document",
-    ) -> list[list[float]]:
-        """
-        Generate embeddings for texts.
-        
-        Args:
-            texts: List of texts to embed
-            task_type: Type of embedding task
-                - "retrieval_document": For indexing documents
-                - "retrieval_query": For search queries
-                - "semantic_similarity": For comparing texts
-                
-        Returns:
-            List of embedding vectors
-        """
+    async def embed(self, texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list[list[float]]:
+        """Generate embeddings for texts."""
         try:
             embeddings = []
             
-            # Process in batches to avoid rate limits
-            batch_size = 100
-            for i in range(0, len(texts), batch_size):
-                batch = texts[i:i + batch_size]
+            for i in range(0, len(texts), 100):
+                batch = texts[i:i + 100]
                 
-                result = genai.embed_content(
-                    model=f"models/{self.settings.embedding_model}",
-                    content=batch,
-                    task_type=task_type,
+                result = await self.client.aio.models.embed_content(
+                    model=self.embedding_model,
+                    contents=batch,
+                    config=types.EmbedContentConfig(task_type=task_type),
                 )
                 
-                # Handle single vs multiple embeddings
-                if len(batch) == 1:
-                    embeddings.append(result['embedding'])
-                else:
-                    embeddings.extend(result['embedding'])
+                for emb in result.embeddings:
+                    embeddings.append(emb.values)
                 
-                # Track tokens (approximate - 1 token ≈ 4 chars)
-                token_count = sum(len(t) // 4 for t in batch)
-                self.total_embedding_tokens += token_count
+                self.total_embedding_tokens += sum(len(t) // 4 for t in batch)
 
             return embeddings
 
         except Exception as e:
-            logger.error(f"Embedding generation failed: {e}")
+            logger.error(f"Embedding failed: {e}")
             raise
 
-    async def embed_single(
-        self,
-        text: str,
-        task_type: str = "retrieval_query",
-    ) -> list[float]:
-        """
-        Generate embedding for a single text.
-        
-        Args:
-            text: Text to embed
-            task_type: Type of embedding task
-            
-        Returns:
-            Embedding vector
-        """
+    async def embed_single(self, text: str, task_type: str = "RETRIEVAL_QUERY") -> list[float]:
+        """Generate embedding for a single text."""
         embeddings = await self.embed([text], task_type=task_type)
         return embeddings[0]
 
     def get_cost_estimate(self) -> dict[str, float]:
-        """
-        Calculate estimated cost based on token usage.
-        
-        Returns:
-            Dictionary with cost breakdown
-        """
+        """Get cost estimate based on token usage."""
         input_cost = (self.total_input_tokens / 1_000_000) * COST_INPUT_PER_MILLION
         output_cost = (self.total_output_tokens / 1_000_000) * COST_OUTPUT_PER_MILLION
         embedding_cost = (self.total_embedding_tokens / 1_000_000) * COST_EMBEDDING_PER_MILLION
@@ -341,9 +183,6 @@ class GeminiClient:
             "input_tokens": self.total_input_tokens,
             "output_tokens": self.total_output_tokens,
             "embedding_tokens": self.total_embedding_tokens,
-            "input_cost_usd": round(input_cost, 6),
-            "output_cost_usd": round(output_cost, 6),
-            "embedding_cost_usd": round(embedding_cost, 6),
             "total_cost_usd": round(input_cost + output_cost + embedding_cost, 6),
         }
 
@@ -354,17 +193,12 @@ class GeminiClient:
         self.total_embedding_tokens = 0
 
 
-# Singleton instance
+# Singleton
 _gemini_client: GeminiClient | None = None
 
 
 def get_gemini_client() -> GeminiClient:
-    """
-    Get or create the Gemini client singleton.
-    
-    Returns:
-        GeminiClient instance
-    """
+    """Get the Gemini client singleton."""
     global _gemini_client
     if _gemini_client is None:
         _gemini_client = GeminiClient()

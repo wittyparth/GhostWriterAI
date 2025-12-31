@@ -1,12 +1,15 @@
 """
-Database connection management for PostgreSQL.
+Database connection management for PostgreSQL/SQLite.
 
-Uses SQLAlchemy async engine with connection pooling for Neon PostgreSQL.
+Uses SQLAlchemy async engine with connection pooling.
+Supports Neon PostgreSQL with SSL and local SQLite.
 """
 
 import logging
+import ssl
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -21,12 +24,49 @@ from src.database.models import Base
 logger = logging.getLogger(__name__)
 
 
+def prepare_async_url(url: str) -> tuple[str, dict]:
+    """
+    Prepare database URL for asyncpg.
+    
+    Handles SSL mode conversion for Neon DB and other PostgreSQL providers.
+    
+    Args:
+        url: Original database URL
+        
+    Returns:
+        Tuple of (modified_url, connect_args)
+    """
+    connect_args = {}
+    
+    # Parse the URL
+    parsed = urlparse(url)
+    query_params = parse_qs(parsed.query)
+    
+    # Handle sslmode for asyncpg
+    if 'sslmode' in query_params:
+        sslmode = query_params.pop('sslmode')[0]
+        
+        if sslmode in ('require', 'verify-ca', 'verify-full'):
+            # asyncpg uses 'ssl' parameter instead
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            connect_args['ssl'] = ssl_context
+    
+    # Rebuild URL without sslmode
+    new_query = urlencode({k: v[0] for k, v in query_params.items()}, doseq=False)
+    new_parsed = parsed._replace(query=new_query)
+    new_url = urlunparse(new_parsed)
+    
+    return new_url, connect_args
+
+
 class DatabaseManager:
     """
     Manages database connections and sessions.
     
-    Uses async SQLAlchemy with connection pooling for PostgreSQL.
-    Designed for serverless PostgreSQL (Neon) with NullPool.
+    Uses async SQLAlchemy with connection pooling.
+    Supports Neon PostgreSQL (serverless) with NullPool.
     """
 
     def __init__(self):
@@ -39,14 +79,29 @@ class DatabaseManager:
     def engine(self):
         """Get or create the async engine."""
         if self._engine is None:
+            url = self.settings.database_url_async
+            connect_args = {}
+            
+            # Handle PostgreSQL with SSL (Neon, Supabase, etc.)
+            if url.startswith("postgresql"):
+                url, connect_args = prepare_async_url(url)
+            
             # Use NullPool for serverless databases like Neon
-            # This prevents connection pooling issues with serverless
-            self._engine = create_async_engine(
-                self.settings.database_url_async,
-                poolclass=NullPool,
-                echo=self.settings.debug,
-            )
-            logger.info("Database engine created")
+            # Use default pooling for SQLite
+            pool_class = NullPool if not url.startswith("sqlite") else None
+            
+            engine_kwargs = {
+                "echo": False,  # Set to True only for debugging SQL queries
+            }
+            
+            if pool_class:
+                engine_kwargs["poolclass"] = pool_class
+            
+            if connect_args:
+                engine_kwargs["connect_args"] = connect_args
+            
+            self._engine = create_async_engine(url, **engine_kwargs)
+            logger.info(f"Database engine created: {url.split('@')[-1] if '@' in url else url}")
         return self._engine
 
     @property
@@ -109,9 +164,10 @@ class DatabaseManager:
         Returns:
             True if database is accessible, False otherwise
         """
+        from sqlalchemy import text
         try:
             async with self.session() as session:
-                await session.execute("SELECT 1")
+                await session.execute(text("SELECT 1"))
             return True
         except Exception as e:
             logger.error(f"Database health check failed: {e}")

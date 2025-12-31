@@ -35,7 +35,7 @@ class TestTextUtilities:
         """Test word counting."""
         assert count_words("Hello world") == 2
         assert count_words("One") == 1
-        assert count_words("") == 1  # Empty splits to ['']
+        assert count_words("") == 0  # Empty string has 0 words
     
     def test_count_characters(self):
         """Test character counting (excluding whitespace)."""

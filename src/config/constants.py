@@ -5,11 +5,13 @@ These are hardcoded values that don't change based on environment.
 """
 
 # ========== LinkedIn Post Constraints ==========
+LINKEDIN_MAX_POST_LENGTH = 3000  # Max characters per post
 LINKEDIN_MAX_POST_CHARS = 3000
 LINKEDIN_OPTIMAL_MIN_CHARS = 600
 LINKEDIN_OPTIMAL_MAX_CHARS = 1200
 LINKEDIN_HOOK_MAX_LINES = 2
 LINKEDIN_OPTIMAL_HASHTAGS = (3, 5)  # min, max
+LINKEDIN_MAX_HASHTAGS = 10  # Maximum hashtags allowed
 
 # ========== Agent Names ==========
 AGENT_VALIDATOR = "validator"
