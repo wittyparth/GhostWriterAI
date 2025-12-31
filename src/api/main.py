@@ -23,6 +23,7 @@ from src.models.schemas import (
     GenerationStatusResponse,
 )
 from src.orchestration import run_generation, continue_generation, AgentState
+from src.api.routes.posts import router as posts_router
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -36,7 +37,10 @@ async def lifespan(app: FastAPI):
     """Application lifespan events."""
     logger.info("Starting LinkedIn AI Agent API")
     db = get_db_manager()
-    await db.create_tables()
+    try:
+        await db.create_tables()
+    except Exception as e:
+        logger.warning(f"Could not create tables: {e}")
     yield
     await db.close()
     logger.info("Shutting down LinkedIn AI Agent API")
@@ -56,6 +60,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(posts_router)
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -1,0 +1,25 @@
+# Minimal requirements (if main requirements.txt fails)
+# Use this if you have build issues with ChromaDB
+
+# Core
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+
+# LLM - Gemini
+google-generativeai
+
+# Database
+sqlalchemy
+psycopg2-binary
+
+# CLI
+rich
+click
+
+# Utils
+python-dotenv
+httpx
+
+# Skip chromadb if having issues - use in-memory store instead

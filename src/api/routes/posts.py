@@ -1,0 +1,208 @@
+"""
+Post generation API routes.
+
+Endpoints for creating and managing LinkedIn posts.
+"""
+
+import logging
+from uuid import UUID, uuid4
+
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.database import get_session
+from src.database.repositories.base import PostRepository, UserRepository, BrandProfileRepository
+from src.models.schemas import (
+    IdeaInput,
+    SubmitAnswersRequest,
+    ClarifyingQuestionsResponse,
+    PostResponse,
+    GenerationStatusResponse,
+)
+from src.orchestration import run_generation, continue_generation, AgentState
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
+
+# In-memory state store (use Redis in production)
+_generation_states: dict[str, AgentState] = {}
+
+
+@router.post("/generate", response_model=ClarifyingQuestionsResponse)
+async def generate_post(
+    request: IdeaInput,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Start post generation from an idea.
+    
+    Returns clarifying questions that need to be answered.
+    """
+    post_id = str(uuid4())
+    
+    try:
+        # Get or create default brand profile
+        brand_profile = {}
+        
+        state = await run_generation(
+            raw_idea=request.raw_idea,
+            brand_profile=brand_profile,
+        )
+        
+        # Check if rejected
+        validator_output = state.get("validator_output", {})
+        if validator_output.get("decision") == "REJECT":
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "status": "rejected",
+                    "reason": validator_output.get("reasoning"),
+                    "quality_score": validator_output.get("quality_score"),
+                    "suggestions": validator_output.get("refinement_suggestions", []),
+                }
+            )
+        
+        # Store state for continuation
+        _generation_states[post_id] = state
+        
+        return ClarifyingQuestionsResponse(
+            post_id=UUID(post_id),
+            questions=state.get("clarifying_questions", []),
+            original_idea=request.raw_idea,
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Generation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{post_id}/answers")
+async def submit_answers(
+    post_id: str,
+    request: SubmitAnswersRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Submit answers to clarifying questions and complete generation.
+    """
+    if post_id not in _generation_states:
+        raise HTTPException(status_code=404, detail="Post not found or expired")
+    
+    state = _generation_states[post_id]
+    
+    # Convert answers to dict
+    answers = {a.question_id: a.answer for a in request.answers}
+    
+    try:
+        final_state = await continue_generation(state, answers)
+        
+        # Clean up state
+        del _generation_states[post_id]
+        
+        # Save to database
+        post_repo = PostRepository(session)
+        post = await post_repo.create(
+            raw_idea=state["raw_idea"],
+            final_content=_build_final_content(final_state.get("final_post", {})),
+            format=final_state.get("format", "text"),
+            status="completed",
+            hooks_generated=final_state.get("writer_output", {}).get("hooks", []),
+            visual_specs=final_state.get("visual_specs"),
+            quality_score=final_state.get("optimizer_output", {}).get("quality_score"),
+        )
+        
+        return {
+            "post_id": post_id,
+            "status": "completed",
+            "post": final_state.get("final_post"),
+            "quality_score": final_state.get("optimizer_output", {}).get("quality_score"),
+            "predicted_engagement": final_state.get("optimizer_output", {}).get("predicted_engagement_rate"),
+        }
+        
+    except Exception as e:
+        logger.error(f"Continuation failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{post_id}/status", response_model=GenerationStatusResponse)
+async def get_status(post_id: str):
+    """Get generation status."""
+    if post_id not in _generation_states:
+        return GenerationStatusResponse(
+            post_id=UUID(post_id),
+            status="completed",
+            progress_percent=100,
+        )
+    
+    state = _generation_states[post_id]
+    return GenerationStatusResponse(
+        post_id=UUID(post_id),
+        status=state.get("status", "processing"),
+        current_agent=state.get("current_agent"),
+        progress_percent=50 if state.get("status") == "awaiting_answers" else 25,
+    )
+
+
+@router.get("/{post_id}")
+async def get_post(
+    post_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get a generated post by ID."""
+    post_repo = PostRepository(session)
+    post = await post_repo.get_by_id(UUID(post_id))
+    
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    return {
+        "post_id": str(post.post_id),
+        "raw_idea": post.raw_idea,
+        "final_content": post.final_content,
+        "format": post.format,
+        "status": post.status,
+        "quality_score": post.quality_score,
+        "created_at": post.created_at,
+    }
+
+
+@router.get("/")
+async def list_posts(
+    limit: int = 20,
+    offset: int = 0,
+    session: AsyncSession = Depends(get_session),
+):
+    """List all posts."""
+    post_repo = PostRepository(session)
+    posts = await post_repo.get_all(limit=limit, offset=offset)
+    
+    return {
+        "posts": [
+            {
+                "post_id": str(p.post_id),
+                "raw_idea": p.raw_idea[:100] + "..." if len(p.raw_idea) > 100 else p.raw_idea,
+                "format": p.format,
+                "status": p.status,
+                "created_at": p.created_at,
+            }
+            for p in posts
+        ],
+        "count": len(posts),
+    }
+
+
+def _build_final_content(final_post: dict) -> str:
+    """Build final content string from post components."""
+    hook = final_post.get("hook", {}).get("text", "")
+    body = final_post.get("body", "")
+    cta = final_post.get("cta", "")
+    hashtags = final_post.get("hashtags", [])
+    
+    content = f"{hook}\n\n{body}\n\n{cta}"
+    if hashtags:
+        content += f"\n\n{' '.join('#' + h for h in hashtags)}"
+    
+    return content
