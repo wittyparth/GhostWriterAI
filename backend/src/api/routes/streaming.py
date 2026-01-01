@@ -100,12 +100,18 @@ async def generate_post_with_stream(
     """
     # Check rate limit
     settings = get_settings()
+    
+    # Determine limit
+    limit = settings.free_tier_daily_limit
+    if getattr(user, "subscription_tier", "free") == "premium":
+        limit = 1000
+    
     post_repo = PostRepository(session)
     count = await post_repo.count_today(user.user_id)
-    if count >= settings.free_tier_daily_limit:
+    if count >= limit:
         raise HTTPException(
             status_code=429,
-            detail=f"Daily limit reached. Free tier is limited to {settings.free_tier_daily_limit} posts per day."
+            detail=f"Daily limit reached. Limit is {limit} posts per day."
         )
         
     post_id = str(uuid4())

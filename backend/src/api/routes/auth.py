@@ -449,7 +449,11 @@ async def get_usage(
     from src.database.repositories.base import PostRepository
     post_repo = PostRepository(session)
     count = await post_repo.count_today(user.user_id)
+    
+    # Determine limit based on tier
     limit = settings.free_tier_daily_limit
+    if getattr(user, "subscription_tier", "free") == "premium":
+        limit = 1000  # Premium limit
     
     return UsageResponse(
         posts_used_today=count,

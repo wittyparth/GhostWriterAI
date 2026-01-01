@@ -42,6 +42,7 @@ class User(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=True)
     linkedin_profile_url = Column(Text, nullable=True)
+    subscription_tier = Column(String(50), default="free", nullable=False)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
