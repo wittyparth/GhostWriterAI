@@ -121,6 +121,10 @@ async function authFetch<T>(
     throw new ApiError(response.status, errorData.detail || 'Request failed', errorData);
   }
 
+  if (response.status === 204) {
+    return {} as T;
+  }
+
   return response.json();
 }
 
