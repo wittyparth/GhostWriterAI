@@ -198,6 +198,28 @@ async def list_posts(
     }
 
 
+@router.delete("/{post_id}", status_code=204)
+async def delete_post(
+    post_id: str,
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    """Delete a post."""
+    post_repo = PostRepository(session)
+    post_uuid = UUID(post_id)
+    
+    # Check ownership
+    post = await post_repo.get_by_id(post_uuid)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    if post.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+    
+    await post_repo.delete_by_id(post_uuid)
+    return None
+
+
 def _build_final_content(final_post: dict) -> str:
     """Build final content string from post components."""
     hook = final_post.get("hook", {}).get("text", "")
