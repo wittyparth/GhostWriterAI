@@ -4,6 +4,7 @@ Authentication API routes with JWT tokens.
 Provides endpoints for:
 - User registration
 - User login
+- Google login
 - Token refresh
 - Get current user
 - Logout
@@ -13,7 +14,7 @@ import logging
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, status
@@ -21,6 +22,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 from src.database import get_session
 from src.database.models import User, BrandProfile
@@ -51,6 +54,10 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+
+class GoogleLoginRequest(BaseModel):
+    token: str
 
 
 class TokenResponse(BaseModel):
@@ -171,8 +178,6 @@ async def register(
 ):
     """
     Register a new user account.
-    
-    Returns access and refresh tokens upon successful registration.
     """
     # Check if email already exists
     stmt = select(User).where(User.email == request.email)
@@ -186,12 +191,10 @@ async def register(
         )
     
     # Create user with hashed password
-    # Note: In the current model, we don't have a password field
-    # We'll store the hashed password in a new field or use linkedin_profile_url temporarily
     user = User(
         name=request.name,
         email=request.email,
-        linkedin_profile_url=hash_password(request.password),  # Store hashed password
+        linkedin_profile_url=hash_password(request.password),
     )
     
     session.add(user)
@@ -223,8 +226,6 @@ async def login(
 ):
     """
     Login with email and password.
-    
-    Returns access and refresh tokens upon successful authentication.
     """
     # Find user by email
     stmt = select(User).where(User.email == request.email)
@@ -237,7 +238,7 @@ async def login(
             detail="Invalid email or password"
         )
     
-    # Verify password (stored in linkedin_profile_url for now)
+    # Verify password
     stored_password = user.linkedin_profile_url
     if not stored_password or not verify_password(request.password, stored_password):
         raise HTTPException(
@@ -267,6 +268,82 @@ async def login(
             "has_brand_profile": has_brand_profile,
         }
     )
+
+
+@router.post("/google", response_model=TokenResponse)
+async def google_login(
+    request: GoogleLoginRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Login or register with Google OAuth.
+    """
+    try:
+        # Verify Google ID token
+        id_info = id_token.verify_oauth2_token(
+            request.token,
+            requests.Request(),
+            settings.google_client_id
+        )
+        
+        email = id_info['email']
+        name = id_info.get('name', '')
+        
+        # Check if user exists
+        stmt = select(User).where(User.email == email)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            # Create new user
+            # Generate a random password hash since they use Google
+            random_pass = bcrypt.hashpw(uuid4().hex.encode(), bcrypt.gensalt()).decode()
+            
+            user = User(
+                name=name,
+                email=email,
+                linkedin_profile_url=random_pass,
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            logger.info(f"New user registered via Google: {email}")
+        else:
+            logger.info(f"User logged in via Google: {email}")
+        
+        # Generate tokens
+        access_token = create_access_token(str(user.user_id))
+        refresh_token = create_refresh_token(str(user.user_id))
+        
+        # Check if user has brand profile
+        stmt = select(BrandProfile).where(BrandProfile.user_id == user.user_id)
+        result = await session.execute(stmt)
+        has_brand_profile = result.scalar_one_or_none() is not None
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user={
+                "user_id": str(user.user_id),
+                "email": user.email,
+                "name": user.name,
+                "created_at": user.created_at.isoformat(),
+                "has_brand_profile": has_brand_profile,
+            }
+        )
+        
+    except ValueError as e:
+        logger.warning(f"Invalid Google token: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token"
+        )
+    except Exception as e:
+        logger.error(f"Google login error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -358,7 +435,5 @@ async def update_me(
 async def logout():
     """
     Logout endpoint (client should discard tokens).
-    
-    Note: For full security, implement token blacklisting.
     """
     return {"message": "Logged out successfully"}

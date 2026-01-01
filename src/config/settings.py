@@ -101,6 +101,10 @@ class Settings(BaseSettings):
         default="http://localhost:5173",
         description="Frontend application URL for CORS",
     )
+    google_client_id: str | None = Field(
+        default=None,
+        description="Google OAuth Client ID",
+    )
     
     # ========== Cost Management ==========
     daily_cost_budget: float = Field(

@@ -26,6 +26,7 @@ interface AuthState {
   
   // Actions
   login: (credentials: LoginCredentials) => Promise<boolean>;
+  loginWithGoogle: (token: string) => Promise<boolean>;
   register: (credentials: RegisterCredentials) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
@@ -55,6 +56,26 @@ export const useAuthStore = create<AuthState>()(
           set({ 
             isLoading: false, 
             error: error.message || 'Login failed' 
+          });
+          return false;
+        }
+      },
+
+      loginWithGoogle: async (token) => {
+        set({ isLoading: true, error: null });
+        try {
+          const { loginWithGoogle } = await import('@/services/auth');
+          const tokens = await loginWithGoogle(token);
+          set({ 
+            user: tokens.user, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+          return true;
+        } catch (error: any) {
+          set({ 
+            isLoading: false, 
+            error: error.message || 'Google login failed' 
           });
           return false;
         }

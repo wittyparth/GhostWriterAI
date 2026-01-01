@@ -8,13 +8,14 @@ import { ArrowRight, Mail, Lock, Chrome, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const { login, loginWithGoogle, isLoading, error, clearError, isAuthenticated } = useAuthStore();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -44,6 +45,20 @@ export default function LoginPage() {
       toast.success("Welcome back!");
       navigate("/app/dashboard");
     }
+  };
+
+  const handleGoogleSuccess = async (response: any) => {
+    if (response.credential) {
+      const success = await loginWithGoogle(response.credential);
+      if (success) {
+        toast.success("Welcome back!");
+        navigate("/app/dashboard");
+      }
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast.error("Google login failed");
   };
 
   return (
@@ -80,16 +95,15 @@ export default function LoginPage() {
           
           {/* Social login */}
           <div className="space-y-3">
-            <Button variant="outline" className="w-full h-11" type="button">
-              <Chrome className="mr-2 h-4 w-4" />
-              Continue with Google
-            </Button>
-            <Button variant="outline" className="w-full h-11" type="button">
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
-              </svg>
-              Continue with LinkedIn
-            </Button>
+            <div className="w-full flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                width="350"
+                theme="outline"
+                size="large"
+              />
+            </div>
           </div>
           
           <div className="relative">
@@ -97,7 +111,7 @@ export default function LoginPage() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground">Or</span>
+              <span className="bg-background px-3 text-muted-foreground">Or continue with email</span>
             </div>
           </div>
           
@@ -120,9 +134,9 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <button type="button" className="text-sm text-primary hover:underline">
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                   Forgot password?
-                </button>
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -161,41 +175,21 @@ export default function LoginPage() {
         >
           <Card className="border-0 shadow-2xl">
             <CardContent className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-2xl">✨</span>
+              <div className="space-y-6">
+                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-2xl">
+                  👋
                 </div>
                 <div>
-                  <h3 className="font-semibold">Welcome to PostAI</h3>
-                  <p className="text-sm text-muted-foreground">AI-powered content creation</p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-success/10 text-success flex items-center justify-center text-sm">✓</div>
-                  <span className="text-sm">5 AI agents working together</span>
+                  <h3 className="text-xl font-semibold mb-2">Welcome to the future of content</h3>
+                  <p className="text-muted-foreground">
+                    "This tool has completely transformed how I write on LinkedIn. I save 10+ hours every week!"
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-success/10 text-success flex items-center justify-center text-sm">✓</div>
-                  <span className="text-sm">Generate posts in 60 seconds</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-success/10 text-success flex items-center justify-center text-sm">✓</div>
-                  <span className="text-sm">Predict engagement before posting</span>
-                </div>
-              </div>
-              
-              <div className="mt-8 pt-6 border-t">
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2">
-                    {[1,2,3,4].map((i) => (
-                      <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background" />
-                    ))}
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium">10,000+</span>
-                    <span className="text-muted-foreground"> creators trust PostAI</span>
+                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div>
+                    <p className="font-medium text-sm">Alex Chen</p>
+                    <p className="text-muted-foreground text-xs">Growth Designer</p>
                   </div>
                 </div>
               </div>
