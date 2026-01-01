@@ -254,16 +254,50 @@ async def submit_answers_with_stream(
     Continues from where generate/stream left off, streaming
     writer, visual (if carousel), and optimizer agent outputs.
     """
+    # Initialize history service
+    history_service = HistoryService(session)
+    
     if post_id not in _tracked_states:
-        raise HTTPException(status_code=404, detail="Post not found or expired")
+        # Try to restore from database (in case of server restart)
+        try:
+            history = await history_service.history_repo.get_by_post_id(UUID(post_id))
+            if history and history.status == "awaiting_answers":
+                # Reconstruct state from history
+                state = {
+                    "raw_idea": history.raw_idea,
+                    "format": history.preferred_format,
+                    "brand_profile": history.brand_profile_snapshot or {},
+                    "validator_output": history.validator_output or {},
+                    "strategist_output": history.strategist_output or {},
+                    "clarifying_questions": history.clarifying_questions or [],
+                    "revision_count": history.revision_count or 0,
+                    "status": "awaiting_answers",
+                }
+                
+                # Reconstruct tracker with a resume event
+                tracker = get_tracker(post_id)
+                tracker.add_event(AgentEvent(
+                    event_type="status_update",
+                    agent_name="system",
+                    message="Session restored from database",
+                    data={"status": "restored"},
+                ))
+                
+                _tracked_states[post_id] = {
+                    "state": state,
+                    "tracker": tracker,
+                }
+                logger.info(f"Restored session for post {post_id} from database")
+            else:
+                raise HTTPException(status_code=404, detail="Post not found or expired")
+        except Exception as e:
+            logger.error(f"Error restoring session: {e}")
+            raise HTTPException(status_code=404, detail="Post not found or expired")
     
     stored = _tracked_states[post_id]
     state = stored["state"]
     
     events_queue: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
-    
-    # Initialize history service
-    history_service = HistoryService(session)
     
     async def event_callback(event: AgentEvent):
         await events_queue.put(event)
