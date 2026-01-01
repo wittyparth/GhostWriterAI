@@ -8,20 +8,20 @@
 @layer base {
   :root {
     /* Clean Light Theme - Soft Slate Palette for better visibility */
-    /* Background: Soft Light Grey/Blue (Slate-50 equivalent) to reduce glare */
-    --background: 210 40% 98%; 
-    --background-secondary: 210 40% 96.1%;
-    --background-tertiary: 210 40% 93%;
+    /* Background: Deeper Soft Grey (Slate-100/200 mix) to provide contrast for cards */
+    --background: 220 14% 95%; 
+    --background-secondary: 220 14% 93%;
+    --background-tertiary: 220 14% 90%;
     
     /* Foreground: Deep, rich dark slate for sharp contrast */
     --foreground: 222.2 47.4% 11.2%;
 
-    /* Card & Surfaces: Pure white for pop against soft background */
-    --card: 0 0% 100%;
+    /* Card & Surfaces: Off-white (Slate-50) - NO PURE WHITE */
+    --card: 220 14% 99%;
     --card-foreground: 222.2 47.4% 11.2%;
     
     /* Popover */
-    --popover: 0 0% 100%;
+    --popover: 220 14% 99%;
     --popover-foreground: 222.2 47.4% 11.2%;
     
     /* Primary - Refined Indigo (Slightly darker for better visual weight) */
@@ -29,7 +29,7 @@
     --primary-foreground: 210 40% 98%;
     
     /* Secondary */
-    --secondary: 210 40% 96.1%;
+    --secondary: 220 14% 93%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     
     /* Muted - Darker grey for better readability of secondary text */
