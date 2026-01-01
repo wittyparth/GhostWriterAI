@@ -25,6 +25,17 @@ User Input → API → Orchestrator → [5 Agents in sequence] → Final Output
               Streaming Events (SSE) → Frontend
 ```
 
+### 1. Authentication (`/api/v1/auth`)
+
+| Method | Endpoint | Description | Request Body | Response |
+|---|---|---|---|---|
+| POST | `/register` | Register new user | `{email, password, name}` | `{access_token, refresh_token, user}` |
+| POST | `/login` | Login user | `{email, password}` | `{access_token, refresh_token, user}` |
+| POST | `/google` | Login with Google | `{token}` | `{access_token, refresh_token, user}` |
+| POST | `/refresh` | Refresh access token | `{refresh_token}` | `{access_token, refresh_token}` |
+| GET | `/me` | Get current user | - | `{user_id, email, name, ...}` |
+| POST | `/logout` | Logout user | - | `{message}` |
+
 ### 1.2 The 5 Agents (in order)
 | Order | Agent | Purpose | When Skipped |
 |-------|-------|---------|--------------|
