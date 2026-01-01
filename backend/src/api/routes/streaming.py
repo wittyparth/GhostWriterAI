@@ -78,6 +78,8 @@ async def _stream_events(
         logger.info(f"Stream ended for post {post_id}")
 
 
+from src.config.settings import get_settings
+
 @router.post("/generate/stream")
 async def generate_post_with_stream(
     request: IdeaInput,
@@ -96,6 +98,16 @@ async def generate_post_with_stream(
     - status_update: General progress update
     - complete: All agents finished
     """
+    # Check rate limit
+    settings = get_settings()
+    post_repo = PostRepository(session)
+    count = await post_repo.count_today(user.user_id)
+    if count >= settings.free_tier_daily_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily limit reached. Free tier is limited to {settings.free_tier_daily_limit} posts per day."
+        )
+        
     post_id = str(uuid4())
     events_queue: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
     

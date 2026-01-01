@@ -8,7 +8,7 @@ import logging
 from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import User, BrandProfile, Post, ReferencePost, AgentExecution
@@ -109,6 +109,18 @@ class PostRepository(BaseRepository):
         stmt = delete(Post).where(Post.post_id == post_id)
         result = await self.session.execute(stmt)
         return result.rowcount > 0
+    
+    async def count_today(self, user_id: UUID) -> int:
+        """Count posts created by user in the last 24 hours."""
+        from datetime import datetime, timedelta
+        cutoff = datetime.utcnow() - timedelta(days=1)
+        
+        stmt = select(func.count()).select_from(Post).where(
+            Post.user_id == user_id,
+            Post.created_at >= cutoff
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar() or 0
 
 
 class ReferencePostRepository(BaseRepository):

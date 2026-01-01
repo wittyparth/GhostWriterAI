@@ -111,6 +111,10 @@ class Settings(BaseSettings):
         default=10.0,
         description="Daily cost budget in USD",
     )
+    free_tier_daily_limit: int = Field(
+        default=5,
+        description="Daily post generation limit for free tier users",
+    )
     
     # ========== Agent Configuration ==========
     max_agent_retries: int = Field(

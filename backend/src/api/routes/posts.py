@@ -31,16 +31,29 @@ router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
 _generation_states: dict[str, AgentState] = {}
 
 
+from src.config.settings import get_settings
+
 @router.post("/generate", response_model=ClarifyingQuestionsResponse)
 async def generate_post(
     request: IdeaInput,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Start post generation from an idea.
     
     Returns clarifying questions that need to be answered.
     """
+    # Check rate limit
+    settings = get_settings()
+    post_repo = PostRepository(session)
+    count = await post_repo.count_today(user.user_id)
+    if count >= settings.free_tier_daily_limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily limit reached. Free tier is limited to {settings.free_tier_daily_limit} posts per day."
+        )
+        
     post_id = str(uuid4())
     
     try:
