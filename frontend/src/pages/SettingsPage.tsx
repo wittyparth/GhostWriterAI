@@ -12,12 +12,13 @@ import { User, Shield, Trash2, Save, Camera, AlertTriangle, Bell, Key } from "lu
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getCurrentUser } from "@/services/auth";
 import { useEffect } from "react";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: "", email: "" });
-  const { data: user } = useQuery({ queryKey: ["me"], queryFn: getCurrentUser });
+  const { data: user, isLoading } = useQuery({ queryKey: ["me"], queryFn: getCurrentUser });
 
   useEffect(() => {
     if (user) {
@@ -40,6 +41,45 @@ export default function SettingsPage() {
       toast.error("Please type DELETE to confirm");
     }
   };
+
+  if (isLoading) {
+    return (
+       <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-2">
+             <Skeleton className="h-8 w-32" />
+             <Skeleton className="h-4 w-48" />
+          </div>
+          <div className="space-y-6">
+             <Skeleton className="h-10 w-96 rounded-md" />
+             <Card>
+                 <CardContent className="p-6 space-y-6">
+                     <Skeleton className="h-6 w-40" />
+                     <div className="flex gap-6">
+                         <Skeleton className="h-16 w-16 rounded-xl" />
+                         <div className="space-y-2">
+                             <Skeleton className="h-9 w-32" />
+                             <Skeleton className="h-3 w-24" />
+                         </div>
+                     </div>
+                     <div className="space-y-4">
+                         <div className="space-y-2">
+                             <Skeleton className="h-4 w-20" />
+                             <Skeleton className="h-10 w-full" />
+                         </div>
+                         <div className="space-y-2">
+                             <Skeleton className="h-4 w-20" />
+                             <Skeleton className="h-10 w-full" />
+                         </div>
+                     </div>
+                     <div className="flex justify-end">
+                         <Skeleton className="h-10 w-32" />
+                     </div>
+                 </CardContent>
+             </Card>
+          </div>
+       </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
