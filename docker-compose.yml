@@ -36,7 +36,7 @@ services:
   # Application
   app:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: linkedin-ai-app
     ports:
@@ -46,8 +46,8 @@ services:
       - REDIS_URL=redis://redis:6379
       - CHROMADB_PATH=/app/data/chromadb
     volumes:
-      - ./data:/app/data
-      - ./.env:/app/.env:ro
+      - ./backend/data:/app/data
+      - ./backend/.env:/app/.env:ro
     depends_on:
       postgres:
         condition: service_healthy
