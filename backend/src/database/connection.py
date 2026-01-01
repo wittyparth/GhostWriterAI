@@ -135,7 +135,11 @@ class DatabaseManager:
             await session.rollback()
             raise
         finally:
-            await session.close()
+            try:
+                await session.close()
+            except Exception as e:
+                # Suppress "already in progress" error commonly caused by cancelled requests
+                logger.warning(f"Error closing session (ignored): {e}")
 
     async def create_tables(self):
         """Create all tables defined in models."""
