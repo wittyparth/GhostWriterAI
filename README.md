@@ -145,7 +145,15 @@ cp .env.example .env
 ### Run the CLI
 
 ```bash
+# Interactive mode selection
 python -m src.cli.main
+
+# Basic mode (simple, fast)
+python -m src.cli.main --basic
+
+# Enhanced mode (see agent thoughts in real-time)
+python -m src.cli.main --enhanced
+python -m src.cli.main -e
 ```
 
 ### Run the API
@@ -220,6 +228,10 @@ docker-compose up -d
 | `GET` | `/api/v1/posts/{id}/status` | Get generation status |
 | `GET` | `/api/v1/posts/{id}` | Get generated post |
 | `GET` | `/api/v1/posts` | List all posts |
+| `POST` | `/api/v1/posts/generate/stream` | **NEW** Stream agent thoughts in real-time |
+| `POST` | `/api/v1/posts/{id}/answers/stream` | **NEW** Continue generation with streaming |
+| `GET` | `/api/v1/posts/{id}/agents` | **NEW** Get detailed agent outputs |
+| `GET` | `/api/v1/posts/{id}/execution-log` | **NEW** Get raw execution log |
 
 ### Example Request
 
@@ -244,6 +256,29 @@ curl -X POST "http://localhost:8000/api/v1/posts/generate" \
   ],
   "original_idea": "3 lessons I learned from failing my first startup"
 }
+```
+
+### 🆕 Streaming API (See Agent Thoughts)
+
+The streaming endpoints use Server-Sent Events (SSE) to show real-time agent execution:
+
+```bash
+# Start generation with streaming
+curl -N "http://localhost:8000/api/v1/posts/generate/stream" \
+  -H "Content-Type: application/json" \
+  -d '{"raw_idea": "3 lessons I learned from failing my first startup"}'
+```
+
+You'll receive events like:
+```
+event: agent_start
+data: {"event_type": "agent_start", "agent_name": "validator", "message": "🔄 Validator agent is analyzing..."}
+
+event: agent_complete
+data: {"event_type": "agent_complete", "agent_name": "validator", "message": "✅ Validator completed in 1234ms", "data": {"summary": "Decision: APPROVE | Quality Score: 8.5/10"}}
+
+event: complete
+data: {"event_type": "complete", "data": {"status": "awaiting_answers", "questions": [...]}}
 ```
 
 📚 **Full API documentation available at** `/docs` when running the server.

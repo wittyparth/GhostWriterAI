@@ -306,3 +306,60 @@ class GenerationStatusResponse(BaseSchema):
     current_agent: str | None = None
     progress_percent: int = 0
     estimated_seconds_remaining: int | None = None
+
+
+# ============================================
+# Agent Execution Tracking Schemas
+# ============================================
+
+class AgentExecutionStep(BaseSchema):
+    """Details of a single agent execution step."""
+    
+    agent_name: str = Field(..., description="Name of the agent that executed")
+    status: Literal["success", "error", "pending"] = Field(..., description="Execution status")
+    execution_time_ms: int = Field(default=0, description="Time taken in milliseconds")
+    attempt: int = Field(default=1, description="Retry attempt number")
+    timestamp: datetime | None = Field(default=None, description="When this step was executed")
+    
+    # Agent-specific output summary
+    output_summary: str | None = Field(default=None, description="Brief summary of agent output")
+    decision: str | None = Field(default=None, description="Decision made by agent if applicable")
+    score: float | None = Field(default=None, description="Score given by agent if applicable")
+    
+    # Full output for detailed view
+    full_output: dict[str, Any] | None = Field(default=None, description="Complete agent output")
+    
+    # Error details if failed
+    error_message: str | None = Field(default=None, description="Error message if failed")
+
+
+class AgentThoughtsResponse(BaseSchema):
+    """Complete agent thoughts and execution log for a post."""
+    
+    post_id: UUID
+    status: str
+    total_execution_time_ms: int = 0
+    revision_count: int = 0
+    
+    # Individual agent outputs
+    agents: dict[str, AgentExecutionStep] = Field(
+        default_factory=dict,
+        description="Execution details for each agent"
+    )
+    
+    # Chronological execution log
+    execution_log: list[AgentExecutionStep] = Field(
+        default_factory=list,
+        description="Ordered list of all agent executions"
+    )
+
+
+class StreamEvent(BaseSchema):
+    """Server-sent event for real-time streaming."""
+    
+    event_type: Literal["agent_start", "agent_complete", "agent_error", "status_update", "complete"]
+    agent_name: str | None = None
+    message: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    progress_percent: int = 0

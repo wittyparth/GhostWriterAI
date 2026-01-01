@@ -223,3 +223,146 @@ class UserFeedback(Base):
     comments = Column(Text, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class GenerationHistory(Base):
+    """
+    Complete generation flow history for a post.
+    
+    Stores the entire flow from raw idea to final output,
+    allowing users to revisit how any post was created.
+    """
+    
+    __tablename__ = "generation_history"
+    
+    history_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("posts.post_id"), nullable=False, unique=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), nullable=True)
+    
+    # ═══════════════════════════════════════════════════════════
+    # INPUT DATA
+    # ═══════════════════════════════════════════════════════════
+    raw_idea = Column(Text, nullable=False)
+    preferred_format = Column(String(50), nullable=True)  # auto, text, carousel, video
+    brand_profile_snapshot = Column(JSONB, default=dict)  # Copy of brand profile at generation time
+    
+    # ═══════════════════════════════════════════════════════════
+    # AGENT OUTPUTS (complete data from each agent)
+    # ═══════════════════════════════════════════════════════════
+    validator_output = Column(JSONB, default=dict)
+    # {decision, quality_score, brand_alignment_score, reasoning, concerns, refinement_suggestions}
+    
+    strategist_output = Column(JSONB, default=dict)
+    # {recommended_format, format_reasoning, structure_type, hook_types, psychological_triggers, 
+    #  tone, clarifying_questions, similar_posts}
+    
+    writer_output = Column(JSONB, default=dict)
+    # {hooks: [{version, text, hook_type, score, reasoning}], body_content, cta, hashtags, 
+    #  formatting_metadata: {word_count, reading_time_seconds, line_count}}
+    
+    visual_output = Column(JSONB, default=dict)
+    # {visual_specs: {total_slides, slides, overall_style, color_palette, typography_notes}, image_prompts}
+    
+    optimizer_output = Column(JSONB, default=dict)
+    # {decision, quality_score, brand_consistency_score, formatting_issues, suggestions,
+    #  predicted_impressions_min, predicted_impressions_max, predicted_engagement_rate, confidence}
+    
+    # ═══════════════════════════════════════════════════════════
+    # USER INTERACTION
+    # ═══════════════════════════════════════════════════════════
+    clarifying_questions = Column(JSONB, default=list)
+    # [{question_id, question, rationale, required}]
+    
+    user_answers = Column(JSONB, default=dict)
+    # {question_id: answer_text, ...}
+    
+    # ═══════════════════════════════════════════════════════════
+    # FINAL OUTPUT
+    # ═══════════════════════════════════════════════════════════
+    final_post = Column(JSONB, default=dict)
+    # {format, hook, body, cta, hashtags, visual_specs, quality_score, predicted_impressions}
+    
+    selected_hook_index = Column(Integer, default=0)  # Which hook user selected (0-2)
+    
+    # ═══════════════════════════════════════════════════════════
+    # EXECUTION METADATA
+    # ═══════════════════════════════════════════════════════════
+    status = Column(String(50), default="pending")
+    # pending, processing, awaiting_answers, completed, failed, rejected
+    
+    total_execution_time_ms = Column(Integer, nullable=True)
+    revision_count = Column(Integer, default=0)
+    
+    # Individual agent timing
+    validator_time_ms = Column(Integer, nullable=True)
+    strategist_time_ms = Column(Integer, nullable=True)
+    writer_time_ms = Column(Integer, nullable=True)
+    visual_time_ms = Column(Integer, nullable=True)
+    optimizer_time_ms = Column(Integer, nullable=True)
+    
+    # Error handling
+    error_message = Column(Text, nullable=True)
+    failed_agent = Column(String(100), nullable=True)
+    
+    # ═══════════════════════════════════════════════════════════
+    # TIMESTAMPS
+    # ═══════════════════════════════════════════════════════════
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    phase1_completed_at = Column(DateTime, nullable=True)  # After strategist
+    answers_submitted_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    post = relationship("Post", backref="history")
+    events = relationship("GenerationEvent", back_populates="history", order_by="GenerationEvent.timestamp")
+
+
+class GenerationEvent(Base):
+    """
+    Individual events during generation.
+    
+    Stores every event (agent_start, agent_complete, etc.) for the timeline view.
+    """
+    
+    __tablename__ = "generation_events"
+    
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    history_id = Column(UUID(as_uuid=True), ForeignKey("generation_history.history_id"), nullable=False)
+    
+    # Event details
+    event_type = Column(String(50), nullable=False)
+    # agent_start, agent_complete, agent_error, status_update, complete
+    
+    agent_name = Column(String(100), nullable=False)
+    # validator, strategist, writer, visual, optimizer, system
+    
+    message = Column(Text, nullable=False)
+    # Human-readable message like "✅ Validator completed in 1234ms"
+    
+    # Event data
+    execution_time_ms = Column(Integer, default=0)
+    progress_percent = Column(Integer, default=0)
+    
+    # Output summary (for agent_complete events)
+    output_summary = Column(Text, nullable=True)
+    # e.g., "Decision: APPROVE | Quality Score: 8.5/10"
+    
+    decision = Column(String(50), nullable=True)
+    # APPROVE, REJECT, REVISE, etc.
+    
+    score = Column(Float, nullable=True)
+    # Quality score from agent
+    
+    # Full event data (JSON blob)
+    event_data = Column(JSONB, default=dict)
+    # Complete data including full agent output if applicable
+    
+    # Error info (for agent_error events)
+    error_message = Column(Text, nullable=True)
+    retry_attempt = Column(Integer, nullable=True)
+    
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    history = relationship("GenerationHistory", back_populates="events")
+

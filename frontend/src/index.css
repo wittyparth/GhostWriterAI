@@ -1,0 +1,392 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Typography - Classic, refined fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    /* Clean Light Theme - Warm, refined palette */
+    --background: 40 20% 99%;
+    --background-secondary: 40 15% 97%;
+    --background-tertiary: 40 12% 95%;
+    --foreground: 20 14% 12%;
+    
+    /* Card & Surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 12%;
+    
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 12%;
+    
+    /* Primary - Refined Indigo */
+    --primary: 234 62% 50%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary */
+    --secondary: 40 10% 94%;
+    --secondary-foreground: 20 14% 30%;
+    
+    /* Muted */
+    --muted: 40 10% 94%;
+    --muted-foreground: 20 8% 50%;
+    
+    /* Accent */
+    --accent: 40 12% 92%;
+    --accent-foreground: 20 14% 20%;
+    
+    /* Destructive */
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Success */
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning */
+    --warning: 32 90% 50%;
+    --warning-foreground: 20 14% 12%;
+    
+    /* Border & Input */
+    --border: 40 10% 88%;
+    --input: 40 10% 88%;
+    --ring: 234 62% 50%;
+    
+    /* Radius - More refined */
+    --radius: 0.5rem;
+    
+    /* Agent Colors - Muted, professional */
+    --agent-validator: 195 60% 42%;
+    --agent-strategist: 258 50% 52%;
+    --agent-writer: 152 50% 38%;
+    --agent-visual: 32 70% 48%;
+    --agent-optimizer: 220 60% 52%;
+    
+    /* Sidebar */
+    --sidebar-background: 40 15% 97%;
+    --sidebar-foreground: 20 14% 30%;
+    --sidebar-primary: 234 62% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 12% 92%;
+    --sidebar-accent-foreground: 20 14% 20%;
+    --sidebar-border: 40 10% 88%;
+    --sidebar-ring: 234 62% 50%;
+  }
+
+  .dark {
+    /* Refined Dark Theme - Deep, sophisticated */
+    --background: 230 20% 8%;
+    --background-secondary: 230 18% 11%;
+    --background-tertiary: 230 16% 14%;
+    --foreground: 40 15% 92%;
+    
+    /* Card & Surfaces */
+    --card: 230 18% 11%;
+    --card-foreground: 40 15% 92%;
+    
+    /* Popover */
+    --popover: 230 18% 11%;
+    --popover-foreground: 40 15% 92%;
+    
+    /* Primary - Soft Blue */
+    --primary: 220 70% 60%;
+    --primary-foreground: 230 20% 8%;
+    
+    /* Secondary */
+    --secondary: 230 14% 16%;
+    --secondary-foreground: 40 12% 75%;
+    
+    /* Muted */
+    --muted: 230 14% 16%;
+    --muted-foreground: 40 8% 55%;
+    
+    /* Accent */
+    --accent: 230 14% 18%;
+    --accent-foreground: 40 15% 88%;
+    
+    /* Destructive */
+    --destructive: 0 60% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Success */
+    --success: 152 55% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    /* Warning */
+    --warning: 32 85% 55%;
+    --warning-foreground: 20 14% 12%;
+    
+    /* Border & Input */
+    --border: 230 14% 18%;
+    --input: 230 14% 18%;
+    --ring: 220 70% 60%;
+    
+    /* Agent Colors - Softer for dark mode */
+    --agent-validator: 195 55% 52%;
+    --agent-strategist: 258 45% 62%;
+    --agent-writer: 152 45% 48%;
+    --agent-visual: 32 65% 55%;
+    --agent-optimizer: 220 55% 62%;
+    
+    /* Sidebar */
+    --sidebar-background: 230 18% 10%;
+    --sidebar-foreground: 40 12% 75%;
+    --sidebar-primary: 220 70% 60%;
+    --sidebar-primary-foreground: 230 20% 8%;
+    --sidebar-accent: 230 14% 16%;
+    --sidebar-accent-foreground: 40 15% 88%;
+    --sidebar-border: 230 14% 16%;
+    --sidebar-ring: 220 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+    letter-spacing: -0.02em;
+  }
+  
+  h1 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h2 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h3 {
+    @apply text-xl md:text-2xl;
+  }
+}
+
+@layer components {
+  /* Clean Card Styles - No glow, subtle shadows */
+  .card-elevated {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  }
+  
+  .card-interactive {
+    @apply card-elevated transition-all duration-200;
+    @apply hover:border-border/80 hover:shadow-md;
+  }
+  
+  /* Agent Indicator Styles - Clean, minimal */
+  .agent-indicator {
+    @apply relative rounded-lg flex items-center justify-center transition-all duration-200;
+  }
+  
+  .agent-indicator-idle {
+    @apply bg-muted/50 text-muted-foreground border border-border;
+  }
+  
+  .agent-indicator-active {
+    @apply border-2;
+  }
+  
+  .agent-indicator-complete {
+    @apply text-white;
+  }
+  
+  /* Thought Item */
+  .thought-item {
+    @apply pl-4 py-2.5 pr-4 rounded-md text-sm;
+    @apply border-l-2 bg-muted/30;
+  }
+  
+  /* Status Indicators */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  
+  .status-success {
+    @apply bg-success;
+  }
+  
+  .status-warning {
+    @apply bg-warning;
+  }
+  
+  .status-error {
+    @apply bg-destructive;
+  }
+  
+  /* Timeline Styles - Clean lines */
+  .timeline-line {
+    @apply absolute left-1/2 -translate-x-1/2 w-px bg-border;
+  }
+  
+  .timeline-node {
+    @apply relative z-10 rounded-lg border transition-all duration-200;
+  }
+  
+  .timeline-node-complete {
+    @apply border-success bg-success text-success-foreground;
+  }
+  
+  .timeline-node-active {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+  
+  .timeline-node-pending {
+    @apply border-border bg-muted/50 text-muted-foreground;
+  }
+  
+  /* Score Display */
+  .score-excellent {
+    @apply text-success;
+  }
+  
+  .score-good {
+    @apply text-success;
+  }
+  
+  .score-average {
+    @apply text-warning;
+  }
+  
+  .score-poor {
+    @apply text-destructive;
+  }
+  
+  /* Hover Effects - Subtle */
+  .hover-lift {
+    @apply transition-all duration-200;
+    @apply hover:-translate-y-0.5 hover:shadow-md;
+  }
+  
+  /* LinkedIn Preview */
+  .linkedin-preview {
+    @apply bg-card rounded-lg border border-border overflow-hidden;
+  }
+  
+  /* Text Utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Scrollbar Styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Font mono for scores */
+  .font-mono {
+    font-family: 'Source Code Pro', ui-monospace, monospace;
+  }
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .border-l-2 {
+    border-left-width: 2px;
+  }
+  
+  /* Agent color utilities */
+  .bg-agent-validator {
+    background-color: hsl(var(--agent-validator));
+  }
+  
+  .bg-agent-strategist {
+    background-color: hsl(var(--agent-strategist));
+  }
+  
+  .bg-agent-writer {
+    background-color: hsl(var(--agent-writer));
+  }
+  
+  .bg-agent-visual {
+    background-color: hsl(var(--agent-visual));
+  }
+  
+  .bg-agent-optimizer {
+    background-color: hsl(var(--agent-optimizer));
+  }
+  
+  .text-agent-validator {
+    color: hsl(var(--agent-validator));
+  }
+  
+  .text-agent-strategist {
+    color: hsl(var(--agent-strategist));
+  }
+  
+  .text-agent-writer {
+    color: hsl(var(--agent-writer));
+  }
+  
+  .text-agent-visual {
+    color: hsl(var(--agent-visual));
+  }
+  
+  .text-agent-optimizer {
+    color: hsl(var(--agent-optimizer));
+  }
+  
+  .border-agent-validator {
+    border-color: hsl(var(--agent-validator));
+  }
+  
+  .border-agent-strategist {
+    border-color: hsl(var(--agent-strategist));
+  }
+  
+  .border-agent-writer {
+    border-color: hsl(var(--agent-writer));
+  }
+  
+  .border-agent-visual {
+    border-color: hsl(var(--agent-visual));
+  }
+  
+  .border-agent-optimizer {
+    border-color: hsl(var(--agent-optimizer));
+  }
+}

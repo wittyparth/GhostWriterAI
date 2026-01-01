@@ -12,6 +12,10 @@ from src.database.repositories.base import (
     ReferencePostRepository,
     ExecutionLogRepository,
 )
+from src.database.repositories.history import (
+    GenerationHistoryRepository,
+    GenerationEventRepository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -20,4 +24,7 @@ __all__ = [
     "PostRepository",
     "ReferencePostRepository",
     "ExecutionLogRepository",
+    "GenerationHistoryRepository",
+    "GenerationEventRepository",
 ]
+

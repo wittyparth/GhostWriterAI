@@ -2,23 +2,24 @@
 CLI interface for LinkedIn AI Agent.
 
 Interactive command-line tool for generating LinkedIn posts.
+Supports both basic mode and enhanced mode with agent thought tracking.
 """
 
 import asyncio
 import json
+import sys
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Prompt
-from rich.markdown import Markdown
+from rich.prompt import Prompt, Confirm
 
 from src.orchestration import run_generation, continue_generation
 
 console = Console()
 
 
-async def main():
-    """Main CLI entry point."""
+async def main_basic():
+    """Basic CLI entry point (original behavior)."""
     console.print(Panel.fit(
         "[bold blue]LinkedIn AI Agent[/bold blue]\n"
         "Transform your ideas into viral LinkedIn posts",
@@ -101,9 +102,47 @@ async def main():
 
 
 def run():
-    """Run the CLI."""
-    asyncio.run(main())
+    """Run the CLI with mode selection."""
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["--enhanced", "-e"]:
+            from src.cli.enhanced import run as run_enhanced
+            run_enhanced()
+            return
+        elif sys.argv[1] in ["--help", "-h"]:
+            console.print(Panel.fit(
+                "[bold]LinkedIn AI Agent CLI[/bold]\n\n"
+                "[cyan]Usage:[/cyan]\n"
+                "  python -m src.cli.main           Run in basic mode\n"
+                "  python -m src.cli.main --enhanced  Run with agent thoughts display\n"
+                "  python -m src.cli.main -e         Shortcut for enhanced mode\n\n"
+                "[cyan]Modes:[/cyan]\n"
+                "  [green]Basic Mode[/green] - Simple, fast output\n"
+                "  [magenta]Enhanced Mode[/magenta] - See what each agent is thinking",
+                border_style="blue"
+            ))
+            return
+    
+    # Interactive mode selection
+    console.print(Panel.fit(
+        "[bold blue]LinkedIn AI Agent[/bold blue]\n"
+        "Transform your ideas into viral LinkedIn posts",
+        border_style="blue"
+    ))
+    
+    console.print("\n[bold]Select mode:[/bold]")
+    console.print("  [1] [green]Basic Mode[/green] - Simple and fast")
+    console.print("  [2] [magenta]Enhanced Mode[/magenta] - See agent thoughts in real-time")
+    
+    choice = Prompt.ask("\n[bold]Enter choice[/bold]", choices=["1", "2"], default="2")
+    
+    if choice == "2":
+        from src.cli.enhanced import run as run_enhanced
+        run_enhanced()
+    else:
+        asyncio.run(main_basic())
 
 
 if __name__ == "__main__":
     run()
+
