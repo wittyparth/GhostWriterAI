@@ -82,9 +82,9 @@ class PostRepository(BaseRepository):
     """Repository for Post model."""
     model = Post
     
-    async def get_by_user_id(self, user_id: UUID, limit: int = 50) -> Sequence[Post]:
+    async def get_by_user_id(self, user_id: UUID, limit: int = 50, offset: int = 0) -> Sequence[Post]:
         """Get posts by user ID."""
-        stmt = select(Post).where(Post.user_id == user_id).order_by(Post.created_at.desc()).limit(limit)
+        stmt = select(Post).where(Post.user_id == user_id).order_by(Post.created_at.desc()).limit(limit).offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
     

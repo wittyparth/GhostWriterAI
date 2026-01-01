@@ -38,57 +38,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PostSummary } from "@/types/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getPosts, deletePost } from "@/services/posts";
 
-// Mock data - would come from API
-const mockPosts: PostSummary[] = [
-  {
-    post_id: "1",
-    raw_idea: "3 lessons I learned from failing my first startup after 18 months",
-    status: "completed",
-    format: "text",
-    quality_score: 8.5,
-    created_at: "2024-01-15T10:30:00Z",
-  },
-  {
-    post_id: "2",
-    raw_idea: "Why I quit my $200K corporate job to pursue entrepreneurship",
-    status: "completed",
-    format: "carousel",
-    quality_score: 9.2,
-    created_at: "2024-01-14T15:45:00Z",
-  },
-  {
-    post_id: "3",
-    raw_idea: "The morning routine that changed my productivity forever",
-    status: "processing",
-    format: "text",
-    created_at: "2024-01-14T09:20:00Z",
-  },
-  {
-    post_id: "4",
-    raw_idea: "5 books every entrepreneur should read in 2024",
-    status: "completed",
-    format: "carousel",
-    quality_score: 7.8,
-    created_at: "2024-01-13T14:00:00Z",
-  },
-  {
-    post_id: "5",
-    raw_idea: "How I built a $1M business with just a laptop",
-    status: "failed",
-    format: "video",
-    created_at: "2024-01-12T11:30:00Z",
-  },
-  {
-    post_id: "6",
-    raw_idea: "The networking strategy nobody talks about",
-    status: "completed",
-    format: "text",
-    quality_score: 8.9,
-    created_at: "2024-01-11T16:15:00Z",
-  },
-];
-
+// Helper functions
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -139,8 +92,18 @@ export default function PostHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
 
+  const queryClient = useQueryClient();
+
+  // Fetch posts
+  const { data, isLoading } = useQuery({
+    queryKey: ["posts"],
+    queryFn: () => getPosts(100, 0),
+  });
+
+  const posts = data?.posts || [];
+
   // Filter posts
-  const filteredPosts = mockPosts.filter((post) => {
+  const filteredPosts = posts.filter((post) => {
     const matchesSearch = post.raw_idea
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -158,14 +121,31 @@ export default function PostHistoryPage() {
     currentPage * postsPerPage
   );
 
+  const deleteMutation = useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      toast.success("Post deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+    onError: () => {
+      toast.error("Failed to delete post");
+    },
+  });
+
   const handleCopy = (post: PostSummary) => {
     navigator.clipboard.writeText(post.raw_idea);
     toast.success("Post idea copied to clipboard!");
   };
 
   const handleDelete = (postId: string) => {
-    toast.success("Post deleted successfully");
+    if (confirm("Are you sure you want to delete this post?")) {
+      deleteMutation.mutate(postId);
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-8 text-center">Loading posts...</div>;
+  }
 
   return (
     <div className="space-y-8">

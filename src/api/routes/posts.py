@@ -11,7 +11,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
+from src.database.models import User
 from src.database.repositories.base import PostRepository, UserRepository, BrandProfileRepository
+from src.api.routes.auth import get_current_user
 from src.models.schemas import (
     IdeaInput,
     SubmitAnswersRequest,
@@ -174,18 +176,20 @@ async def list_posts(
     limit: int = 20,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    """List all posts."""
+    """List all posts for the current user."""
     post_repo = PostRepository(session)
-    posts = await post_repo.get_all(limit=limit, offset=offset)
+    posts = await post_repo.get_by_user_id(user.user_id, limit=limit, offset=offset)
     
     return {
         "posts": [
             {
                 "post_id": str(p.post_id),
-                "raw_idea": p.raw_idea[:100] + "..." if len(p.raw_idea) > 100 else p.raw_idea,
+                "raw_idea": p.raw_idea, # Return full idea or truncated depending on frontend needs. Let's keep it full as frontend truncates via CSS mostly, but mockup showed full text. Actually, frontend PostHistoryPage shows "raw_idea".
                 "format": p.format,
                 "status": p.status,
+                "quality_score": p.quality_score,
                 "created_at": p.created_at,
             }
             for p in posts
