@@ -258,147 +258,149 @@ export default function PostHistoryPage() {
               >
                 {viewMode === "grid" ? (
                   /* Grid Card */
-                  <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/20">
-                    {/* Top accent bar based on format */}
-                    <div className={`h-1 w-full ${
-                      post.format === "carousel" ? "bg-blue-500" : 
-                      post.format === "video" ? "bg-purple-500" : "bg-emerald-500"
-                    }`} />
-                    
-                    <div className="p-5">
-                      {/* Header with format and actions */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-8 w-8 rounded-lg bg-secondary/80 flex items-center justify-center ${formatConfig.color}`}>
-                            <FormatIcon className="h-4 w-4" />
+                  <Link to={`/app/posts/${post.post_id}`} className="block h-full">
+                    <Card className="group relative overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-primary/20 h-full">
+                      <div className="p-5 flex flex-col h-full">
+                        {/* Header with format and actions */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`h-8 w-8 rounded-lg bg-secondary/80 flex items-center justify-center ${formatConfig.color}`}>
+                              <FormatIcon className="h-4 w-4" />
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              {formatConfig.label}
+                            </span>
                           </div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            {formatConfig.label}
-                          </span>
+                          
+                          <div onClick={(e) => e.preventDefault()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/app/posts/${post.post_id}`} className="cursor-pointer">
+                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopy(post); }} className="cursor-pointer">
+                                  <Copy className="mr-2 h-4 w-4" /> Copy Idea
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(post.post_id); }}
+                                  className="text-destructive cursor-pointer focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                        
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem asChild>
-                              <Link to={`/app/posts/${post.post_id}`} className="cursor-pointer">
-                                <Eye className="mr-2 h-4 w-4" /> View Details
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCopy(post)} className="cursor-pointer">
-                              <Copy className="mr-2 h-4 w-4" /> Copy Idea
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(post.post_id)}
-                              className="text-destructive cursor-pointer focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+
+                        {/* Title */}
+                        <h3 className="font-medium text-foreground leading-snug line-clamp-2 mb-4 min-h-[2.75rem] flex-grow">
+                          {post.raw_idea}
+                        </h3>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-between pt-4 border-t border-border/50 mt-auto">
+                          <div className="flex items-center gap-3">
+                            <Badge variant={statusConfig.variant} className="text-xs">
+                              {statusConfig.label}
+                            </Badge>
+                            {post.quality_score && (
+                              <div className="flex items-center gap-1 text-sm">
+                                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                                <span className="font-medium">{post.quality_score}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {formatDate(post.created_at)}
+                          </div>
+                        </div>
                       </div>
+                    </Card>
+                  </Link>
+                ) : (
+                  /* List Card */
+                  <Link to={`/app/posts/${post.post_id}`} className="block">
+                    <Card className="group hover:shadow-md transition-all duration-200 hover:border-primary/20">
+                      <div className="flex items-center gap-4 p-4">
+                        {/* Format indicator */}
+                        <div className={`h-10 w-10 rounded-lg bg-secondary/80 flex items-center justify-center flex-shrink-0 ${formatConfig.color}`}>
+                          <FormatIcon className="h-5 w-5" />
+                        </div>
 
-                      {/* Title */}
-                      <h3 className="font-medium text-foreground leading-snug line-clamp-2 mb-4 min-h-[2.75rem]">
-                        {post.raw_idea}
-                      </h3>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={statusConfig.variant} className="text-xs">
+                              {statusConfig.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                              {formatConfig.label}
+                            </span>
+                          </div>
+                          <h3 className="font-medium text-foreground truncate">
+                            {post.raw_idea}
+                          </h3>
+                        </div>
 
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                        <div className="flex items-center gap-3">
-                          <Badge variant={statusConfig.variant} className="text-xs">
-                            {statusConfig.label}
-                          </Badge>
+                        {/* Meta */}
+                        <div className="flex items-center gap-6 flex-shrink-0">
                           {post.quality_score && (
-                            <div className="flex items-center gap-1 text-sm">
-                              <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                            <div className="flex items-center gap-1.5 text-sm">
+                              <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                               <span className="font-medium">{post.quality_score}</span>
                             </div>
                           )}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatDate(post.created_at)}
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ) : (
-                  /* List Card */
-                  <Card className="group hover:shadow-md transition-all duration-200 hover:border-primary/20">
-                    <div className="flex items-center gap-4 p-4">
-                      {/* Format indicator */}
-                      <div className={`h-10 w-10 rounded-lg bg-secondary/80 flex items-center justify-center flex-shrink-0 ${formatConfig.color}`}>
-                        <FormatIcon className="h-5 w-5" />
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={statusConfig.variant} className="text-xs">
-                            {statusConfig.label}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                            {formatConfig.label}
-                          </span>
-                        </div>
-                        <h3 className="font-medium text-foreground truncate">
-                          {post.raw_idea}
-                        </h3>
-                      </div>
-
-                      {/* Meta */}
-                      <div className="flex items-center gap-6 flex-shrink-0">
-                        {post.quality_score && (
-                          <div className="flex items-center gap-1.5 text-sm">
-                            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                            <span className="font-medium">{post.quality_score}</span>
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-[80px]">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatDate(post.created_at)}
                           </div>
-                        )}
-                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground min-w-[80px]">
-                          <Clock className="h-3.5 w-3.5" />
-                          {formatDate(post.created_at)}
+                          
+                          {/* Actions */}
+                          <div onClick={(e) => e.preventDefault()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link to={`/app/posts/${post.post_id}`} className="cursor-pointer">
+                                    <Eye className="mr-2 h-4 w-4" /> View Details
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleCopy(post); }} className="cursor-pointer">
+                                  <Copy className="mr-2 h-4 w-4" /> Copy Idea
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => { e.stopPropagation(); handleDelete(post.post_id); }}
+                                  className="text-destructive cursor-pointer focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-                        
-                        {/* Actions */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem asChild>
-                              <Link to={`/app/posts/${post.post_id}`} className="cursor-pointer">
-                                <Eye className="mr-2 h-4 w-4" /> View Details
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCopy(post)} className="cursor-pointer">
-                              <Copy className="mr-2 h-4 w-4" /> Copy Idea
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(post.post_id)}
-                              className="text-destructive cursor-pointer focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  </Link>
                 )}
               </motion.div>
             );

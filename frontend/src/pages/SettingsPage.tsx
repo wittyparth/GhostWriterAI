@@ -11,9 +11,19 @@ import {
 import { User, Shield, Trash2, Save, Camera, AlertTriangle, Bell, Key } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentUser } from "@/services/auth";
+import { useEffect } from "react";
 
 export default function SettingsPage() {
-  const [profile, setProfile] = useState({ name: "Alex Johnson", email: "alex@example.com" });
+  const [profile, setProfile] = useState({ name: "", email: "" });
+  const { data: user } = useQuery({ queryKey: ["me"], queryFn: getCurrentUser });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({ name: user.name, email: user.email });
+    }
+  }, [user]);
   const [notifications, setNotifications] = useState({ email: true, push: false, weekly: true });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");

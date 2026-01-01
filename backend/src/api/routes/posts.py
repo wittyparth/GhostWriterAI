@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
-from src.database.models import User
+from src.database.models import User, Post
 from src.database.repositories.base import PostRepository, UserRepository, BrandProfileRepository
 from src.api.routes.auth import get_current_user
 from src.models.schemas import (
@@ -23,9 +23,44 @@ from src.models.schemas import (
 )
 from src.orchestration import run_generation, continue_generation, AgentState
 
+from sqlalchemy import select, func
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/posts", tags=["posts"])
+
+@router.get("/analytics")
+async def get_analytics(
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    """Get analytics summary."""
+    # Total Posts
+    stmt = select(func.count()).select_from(Post).where(Post.user_id == user.user_id)
+    total_posts = (await session.execute(stmt)).scalar() or 0
+    
+    # Avg Quality Score
+    stmt = select(func.avg(Post.quality_score)).where(Post.user_id == user.user_id)
+    avg_score = (await session.execute(stmt)).scalar() or 0.0
+
+    # Format Distribution
+    stmt = select(Post.format, func.count()).where(Post.user_id == user.user_id).group_by(Post.format)
+    formats = (await session.execute(stmt)).all()
+    format_distribution = [{"name": f or "Unknown", "value": c} for f, c in formats]
+
+    # Status Distribution
+    stmt = select(Post.status, func.count()).where(Post.user_id == user.user_id).group_by(Post.status)
+    statuses = (await session.execute(stmt)).all()
+    status_distribution = [{"status": s or "Unknown", "count": c} for s, c in statuses]
+    
+    return {
+        "total_posts": total_posts,
+        "avg_quality_score": round(avg_score, 1) if avg_score else 0.0,
+        "total_impressions": 0,
+        "engagement_rate": 0.0,
+        "format_distribution": format_distribution,
+        "status_distribution": status_distribution,
+    }
 
 # In-memory state store (use Redis in production)
 _generation_states: dict[str, AgentState] = {}

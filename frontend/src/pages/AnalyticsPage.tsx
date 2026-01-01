@@ -4,51 +4,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, TrendingUp, FileText, Star, Calendar, PieChart, Activity } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getAnalyticsStats } from "@/services/api";
+import { getAnalytics } from "@/services/posts";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
 } from "recharts";
 
-const postsOverTimeData = [
-  { date: "Jan 1", posts: 3 },
-  { date: "Jan 5", posts: 5 },
-  { date: "Jan 10", posts: 2 },
-  { date: "Jan 15", posts: 7 },
-  { date: "Jan 20", posts: 4 },
-  { date: "Jan 25", posts: 6 },
-  { date: "Jan 30", posts: 8 },
-];
-
-const qualityScoreData = [
-  { date: "Jan 1", score: 7.5 },
-  { date: "Jan 5", score: 8.0 },
-  { date: "Jan 10", score: 7.8 },
-  { date: "Jan 15", score: 8.5 },
-  { date: "Jan 20", score: 8.2 },
-  { date: "Jan 25", score: 8.7 },
-  { date: "Jan 30", score: 9.0 },
-];
-
-const formatDistribution = [
-  { name: "Text", value: 15, color: "hsl(234 62% 50%)" },
-  { name: "Carousel", value: 8, color: "hsl(220 70% 60%)" },
-  { name: "Video", value: 3, color: "hsl(152 60% 36%)" },
-];
-
-const statusDistribution = [
-  { status: "Completed", count: 20 },
-  { status: "Processing", count: 2 },
-  { status: "Failed", count: 1 },
-  { status: "Pending", count: 3 },
-];
+// ... (keep static data like postsOverTimeData constant if needed for charts specific mock fallback)
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d");
   
   const { data, isLoading } = useQuery({
-    queryKey: ['analytics', 'stats'],
-    queryFn: getAnalyticsStats,
+    queryKey: ['analytics'],
+    queryFn: getAnalytics,
     refetchInterval: 30000,
   });
 
@@ -60,60 +29,56 @@ export default function AnalyticsPage() {
     );
   }
 
-  const statsData = data?.stats || {
-    total_posts: 0,
-    avg_quality_score: 0,
-    completed_posts: 0,
-    posts_this_week: 0
-  };
+  // Calculate derived stats
+  const completedCount = data?.status_distribution.find(s => s.status === 'completed' || s.status === 'published')?.count || 0;
 
   const stats = [
     { 
       label: "Total Posts", 
-      value: statsData.total_posts.toString(), 
+      value: (data?.total_posts || 0).toString(), 
       icon: FileText, 
       change: "Lifetime", 
       changeType: "neutral" 
     },
     { 
       label: "Avg. Quality", 
-      value: statsData.avg_quality_score.toString(), 
+      value: (data?.avg_quality_score || 0).toString(), 
       icon: Star, 
       change: "Based on AI score", 
       changeType: "neutral" 
     },
     { 
       label: "Completed", 
-      value: statsData.completed_posts.toString(), 
+      value: completedCount.toString(), 
       icon: Activity, 
-      change: `${statsData.total_posts > 0 ? Math.round((statsData.completed_posts / statsData.total_posts) * 100) : 0}% success rate`, 
+      change: `${(data?.total_posts || 0) > 0 ? Math.round((completedCount / (data?.total_posts || 1)) * 100) : 0}% success rate`, 
       changeType: "neutral" 
     },
     { 
-      label: "This Week", 
-      value: statsData.posts_this_week.toString(), 
+      label: "Impressions", 
+      value: (data?.total_impressions || 0).toString(), 
       icon: Calendar, 
-      change: "Posts generated", 
+      change: "Tracked (Coming Soon)", 
       changeType: "neutral" 
     },
   ];
 
   const formatColors: Record<string, string> = {
-    "Text": "hsl(234 62% 50%)",
-    "Carousel": "hsl(220 70% 60%)",
-    "Video": "hsl(152 60% 36%)",
+    "text": "hsl(234 62% 50%)",
+    "carousel": "hsl(220 70% 60%)",
+    "video": "hsl(152 60% 36%)",
     "Auto": "hsl(var(--primary))",
     "Unknown": "hsl(var(--muted))"
   };
 
   const formatDistribution = (data?.format_distribution || []).map(item => ({
     ...item,
-    color: formatColors[item.name] || formatColors["Unknown"]
+    color: formatColors[item.name.toLowerCase()] || formatColors["Unknown"]
   }));
 
   const statusDistribution = data?.status_distribution || [];
-  const topPosts = data?.top_posts || [];
-  const chartData = data?.daily_activity || [];
+  const topPosts: any[] = []; // No top posts endpoint yet
+  const chartData: any[] = []; // No daily activity endpoint yet
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -260,7 +225,7 @@ export default function AnalyticsPage() {
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div 
                         className={`h-full rounded-full ${item.status === "Completed" ? "bg-success" : item.status === "Processing" ? "bg-primary" : item.status === "Pending" ? "bg-warning" : "bg-destructive"}`} 
-                        style={{ width: `${(item.count / (statsData.total_posts || 1)) * 100}%` }} 
+                        style={{ width: `${(item.count / (data?.total_posts || 1)) * 100}%` }} 
                       />
                     </div>
                   </div>
