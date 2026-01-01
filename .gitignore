@@ -106,3 +106,5 @@ temp/
 secrets/
 *.pem
 *.key
+
+docs

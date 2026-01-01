@@ -6,15 +6,15 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-00a393.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://react.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
 
 <p align="center">
+  <!-- Place a screenshot of the new frontend here -->
   <img src="docs/images/demo.svg" alt="Demo" width="700">
 </p>
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Docs](#-api-documentation) • [Contributing](#-contributing)
+[Features](#-features) • [Quick Start](#-quick-start) • [Usage](#-usage) • [Architecture](#-architecture) • [API Docs](#-api-documentation)
 
 </div>
 
@@ -34,83 +34,13 @@ LinkedIn AI Agent is a **production-ready, multi-agent AI system** that transfor
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
-
-### 🤖 Multi-Agent Architecture
-Five specialized AI agents collaborate using LangGraph orchestration with intelligent routing and revision loops.
-
-### 🔄 Swappable AI Models
-Easily switch between Gemini 3 Flash (fast) and Gemini 3 Pro (powerful) based on your needs.
-
-### 📚 RAG-Powered
-Knowledge base of successful posts for inspiration, hook patterns, and structure templates.
-
-</td>
-<td width="50%">
-
-### 🎯 Quality Scoring
-Every post gets a quality score (1-10) with actionable improvement suggestions.
-
-### 📈 Performance Prediction
-AI predicts impressions and engagement rate based on content analysis.
-
-### 🎨 Carousel Support
-Automatic generation of 8-10 slide specifications with layouts and design notes.
-
-</td>
-</tr>
-</table>
-
-### More Features
-
-- 🔐 **Rate Limiting** - Built-in protection (30 req/min)
-- 💾 **PostgreSQL Storage** - Persistent storage for all posts and analytics
-- 🚀 **Redis Caching** - Fast session state and caching
-- 📝 **Interactive CLI** - Beautiful terminal interface with Rich
-- 🌐 **REST API** - Full-featured FastAPI with OpenAPI docs
-- 🐳 **Docker Ready** - One-command deployment with docker-compose
-- 🧪 **Comprehensive Tests** - Unit, integration, and E2E tests
-
----
-
-## 🛠️ Tech Stack
-
-<table>
-<tr>
-<td align="center" width="96">
-<img src="https://skillicons.dev/icons?i=python" width="48" height="48" alt="Python" />
-<br>Python 3.11+
-</td>
-<td align="center" width="96">
-<img src="https://skillicons.dev/icons?i=fastapi" width="48" height="48" alt="FastAPI" />
-<br>FastAPI
-</td>
-<td align="center" width="96">
-<img src="https://skillicons.dev/icons?i=postgres" width="48" height="48" alt="PostgreSQL" />
-<br>PostgreSQL
-</td>
-<td align="center" width="96">
-<img src="https://skillicons.dev/icons?i=redis" width="48" height="48" alt="Redis" />
-<br>Redis
-</td>
-<td align="center" width="96">
-<img src="https://skillicons.dev/icons?i=docker" width="48" height="48" alt="Docker" />
-<br>Docker
-</td>
-</tr>
-</table>
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **LLM** | Google Gemini 3 Flash/Pro | Content generation & analysis |
-| **Orchestration** | LangGraph | Multi-agent workflow management |
-| **Vector Store** | ChromaDB / Pinecone | RAG knowledge base |
-| **Database** | PostgreSQL + SQLAlchemy | Persistent storage |
-| **Cache** | Redis | Session state & rate limiting |
-| **API** | FastAPI | REST endpoints with auto-docs |
-| **CLI** | Rich + Click | Beautiful terminal interface |
+- **🤖 Multi-Agent Architecture**: 5 specialized agents collaborating via LangGraph.
+- **🖥️ Dual Interface**: Use the **Interactive CLI** for terminal lovers or the **Modern Web App** for a full graphical experience.
+- **🔄 Session Restoration**: Resume your generation sessions even after server restarts.
+- **📚 Post Library**: Save, manage, and revisit your generated posts.
+- **🎨 Brand Profiles**: Customize tone, voice, and content pillars.
+- **🔐 Google Authentication**: Secure login and user management.
+- **📊 Analytics Dashboard**: Track your generation history and quality trends.
 
 ---
 
@@ -119,16 +49,14 @@ Automatic generation of 8-10 slide specifications with layouts and design notes.
 ### Prerequisites
 
 - Python 3.11+
+- Node.js 18+
 - [Google AI Studio API Key](https://makersuite.google.com/app/apikey)
-- PostgreSQL (optional, uses SQLite fallback)
-- Redis (optional, uses in-memory fallback)
+- PostgreSQL & Redis (optional, defaults to SQLite/Memory)
 
-### Installation
+### 1. Backend Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/linkedin-ai-agent.git
-cd linkedin-ai-agent
+cd backend
 
 # Create virtual environment
 python -m venv venv
@@ -142,250 +70,121 @@ cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
 ```
 
-### Run the CLI
+### 2. Frontend Setup
 
 ```bash
-# Interactive mode selection
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Ensure VITE_API_URL points to your backend (default: http://localhost:8000)
+```
+
+---
+
+## 💻 Usage
+
+You can use the LinkedIn AI Agent via the Command Line Interface (CLI) or the Web Application.
+
+### Option A: Web Application (Recommended)
+
+1. **Start the Backend Server**:
+   ```bash
+   # From /backend directory
+   uvicorn src.api.main:app --reload
+   ```
+   The API will start at `http://localhost:8000`.
+
+2. **Start the Frontend Client**:
+   ```bash
+   # From /frontend directory
+   npm run dev
+   ```
+   The app will open at `http://localhost:5173`.
+
+3. **Login & Generate**:
+   - Go to `http://localhost:5173`.
+   - Log in with Google.
+   - Click "Create New Post" to start the AI wizard.
+
+### Option B: Command Line Interface (CLI)
+
+The CLI provides a stream-lined, text-based interface for content generation.
+
+```bash
+# From /backend directory
 python -m src.cli.main
-
-# Basic mode (simple, fast)
-python -m src.cli.main --basic
-
-# Enhanced mode (see agent thoughts in real-time)
-python -m src.cli.main --enhanced
-python -m src.cli.main -e
 ```
 
-### Run the API
+**CLI Modes:**
+- `python -m src.cli.main --basic`: Fast generation without detailed agent logs.
+- `python -m src.cli.main --enhanced`: (Default) Shows real-time thoughts from every agent.
+- `python -m src.cli.main --help`: View all available options.
+
+### Option C: Docker (Full Stack)
+
+Run the entire stack (Database, Cache, Backend, Frontend) with one command:
 
 ```bash
-uvicorn src.api.main:app --reload
-# Visit http://localhost:8000/docs for interactive API docs
-```
-
-### Run with Docker
-
-```bash
+# From project root
 docker-compose up -d
-# API available at http://localhost:8000
 ```
+- Web App: `http://localhost:8000` (Backend servers static frontend files in Docker mode if configured, otherwise access Frontend container port)
 
 ---
 
 ## 🏗️ Architecture
 
+The project follows a **Monorepo** structure:
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     USER INPUT (Idea)                       │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    VALIDATOR AGENT                          │
-│         Quality scoring • Brand alignment • Decision        │
-└────────────────────────┬────────────────────────────────────┘
-                         │ APPROVE
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   STRATEGIST AGENT                          │
-│    Format selection • Structure • Clarifying questions      │
-└────────────────────────┬────────────────────────────────────┘
-                         │ + User Answers
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     WRITER AGENT                            │
-│         3 hook variations • Body • CTA • Hashtags           │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-              ▼                     ▼
-┌──────────────────────┐  ┌──────────────────────┐
-│    VISUAL AGENT      │  │   OPTIMIZER AGENT    │
-│  (Carousel only)     │  │   QA • Predictions   │
-│  8-10 slide specs    │  │   Brand consistency  │
-└──────────────────────┘  └──────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    FINAL OUTPUT                             │
-│   Hook • Body • CTA • Hashtags • Quality Score • Predictions│
-└─────────────────────────────────────────────────────────────┘
+linkedin-ai-agent/
+├── 📁 backend/               # FastAPI, LangGraph, Database
+│   ├── 📁 src/               # Application source code
+│   │   ├── 📁 agents/        # AI Agent logic
+│   │   ├── 📁 api/           # API Endpoints
+│   │   ├── 📁 cli/           # CLI Tool
+│   │   └── ...
+│   ├── 📁 alembic/           # Migrations
+│   └── 📄 requirements.txt
+├── 📁 frontend/              # React + TypeScript + Vite
+│   ├── 📁 src/               # UI Components & Pages
+│   └── 📄 package.json
+└── 📄 docker-compose.yml     # Orchestration
+```
+
+### Agent Workflow
+
+```mermaid
+graph TD
+    User[User Idea] --> Validator
+    Validator -->|Approve| Strategist
+    Validator -->|Reject| User
+    Strategist -->|Plan| Writer
+    Writer -->|Draft| Visual[Visual Agent]
+    Writer -->|Draft| Optimizer
+    Visual -->|Specs| Optimizer
+    Optimizer -->|Final Polish| Output
 ```
 
 ---
 
 ## 📖 API Documentation
 
-### Endpoints
+Full interactive API documentation is available when the backend is running:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/health/detailed` | Detailed component health |
-| `POST` | `/api/v1/posts/generate` | Start post generation |
-| `POST` | `/api/v1/posts/{id}/answers` | Submit answers to questions |
-| `GET` | `/api/v1/posts/{id}/status` | Get generation status |
-| `GET` | `/api/v1/posts/{id}` | Get generated post |
-| `GET` | `/api/v1/posts` | List all posts |
-| `POST` | `/api/v1/posts/generate/stream` | **NEW** Stream agent thoughts in real-time |
-| `POST` | `/api/v1/posts/{id}/answers/stream` | **NEW** Continue generation with streaming |
-| `GET` | `/api/v1/posts/{id}/agents` | **NEW** Get detailed agent outputs |
-| `GET` | `/api/v1/posts/{id}/execution-log` | **NEW** Get raw execution log |
-
-### Example Request
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/posts/generate" \
-  -H "Content-Type: application/json" \
-  -d '{"raw_idea": "3 lessons I learned from failing my first startup"}'
-```
-
-### Example Response
-
-```json
-{
-  "post_id": "550e8400-e29b-41d4-a716-446655440000",
-  "questions": [
-    {
-      "question_id": "q1",
-      "question": "What was the specific outcome?",
-      "rationale": "Adds credibility with concrete results",
-      "required": true
-    }
-  ],
-  "original_idea": "3 lessons I learned from failing my first startup"
-}
-```
-
-### 🆕 Streaming API (See Agent Thoughts)
-
-The streaming endpoints use Server-Sent Events (SSE) to show real-time agent execution:
-
-```bash
-# Start generation with streaming
-curl -N "http://localhost:8000/api/v1/posts/generate/stream" \
-  -H "Content-Type: application/json" \
-  -d '{"raw_idea": "3 lessons I learned from failing my first startup"}'
-```
-
-You'll receive events like:
-```
-event: agent_start
-data: {"event_type": "agent_start", "agent_name": "validator", "message": "🔄 Validator agent is analyzing..."}
-
-event: agent_complete
-data: {"event_type": "agent_complete", "agent_name": "validator", "message": "✅ Validator completed in 1234ms", "data": {"summary": "Decision: APPROVE | Quality Score: 8.5/10"}}
-
-event: complete
-data: {"event_type": "complete", "data": {"status": "awaiting_answers", "questions": [...]}}
-```
-
-📚 **Full API documentation available at** `/docs` when running the server.
-
----
-
-## 📁 Project Structure
-
-```
-linkedin-ai-agent/
-├── 📁 .github/workflows/     # CI/CD pipelines
-├── 📁 alembic/               # Database migrations
-├── 📁 src/
-│   ├── 📁 agents/            # 5 AI agents + base class
-│   ├── 📁 api/               # FastAPI app & routes
-│   │   ├── 📁 middleware/    # Rate limiting
-│   │   └── 📁 routes/        # API endpoints
-│   ├── 📁 cli/               # Interactive CLI
-│   ├── 📁 config/            # Settings & constants
-│   ├── 📁 database/          # Models & repositories
-│   ├── 📁 llm/               # Gemini client
-│   ├── 📁 models/            # Pydantic schemas
-│   ├── 📁 orchestration/     # LangGraph workflow
-│   ├── 📁 rag/               # Vector store & retrieval
-│   ├── 📁 services/          # Cache & health
-│   └── 📁 utils/             # Helpers
-├── 📁 scripts/               # Utility scripts
-├── 📁 tests/                 # Test suites
-├── 📄 docker-compose.yml     # Docker services
-├── 📄 Dockerfile             # Container definition
-└── 📄 requirements.txt       # Dependencies
-```
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ -v --cov=src --cov-report=html
-
-# Run specific test suites
-pytest tests/unit/ -v           # Unit tests
-pytest tests/integration/ -v    # Integration tests
-pytest tests/e2e/ -v            # End-to-end tests
-```
-
----
-
-## ⚙️ Configuration
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GEMINI_API_KEY` | Google AI Studio API key | Required |
-| `DATABASE_URL` | PostgreSQL connection string | SQLite fallback |
-| `REDIS_URL` | Redis connection string | In-memory fallback |
-| `CHROMADB_PATH` | ChromaDB storage path | `./data/chromadb` |
-| `DEFAULT_MODEL` | Default Gemini model | `gemini-3-flash-preview` |
-| `DEBUG` | Enable debug mode | `false` |
-
----
-
-## 💰 Cost Estimation
-
-| Model | Input | Output | Per Post |
-|-------|-------|--------|----------|
-| Gemini 3 Flash | $0.075/1M tokens | $0.30/1M tokens | ~$0.01-0.02 |
-| Gemini 3 Pro | $0.50/1M tokens | $2.00/1M tokens | ~$0.05-0.10 |
-
-**Estimated monthly cost**: $5-20 for moderate usage (100-500 posts/month)
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
+Contributions are welcome! Please check `CONTRIBUTING.md` for guidelines.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [Google Gemini](https://ai.google.dev/) for the powerful AI models
-- [LangGraph](https://github.com/langchain-ai/langgraph) for agent orchestration
-- [FastAPI](https://fastapi.tiangolo.com/) for the excellent web framework
-- [Rich](https://rich.readthedocs.io/) for beautiful terminal output
-
----
-
-<div align="center">
-
-**⭐ Star this repo if you find it useful!**
-
-Made with ❤️ by [Your Name](https://github.com/yourusername)
-
-</div>
+MIT License - see `LICENSE` for details.
