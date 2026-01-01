@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     
     services:
       postgres:
@@ -76,11 +79,14 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
+          file: backend/coverage.xml
           fail_ci_if_error: false
 
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       
@@ -114,7 +120,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: backend
           push: false
           tags: linkedin-ai-agent:latest
           cache-from: type=gha
