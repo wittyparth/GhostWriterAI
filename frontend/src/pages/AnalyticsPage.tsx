@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, TrendingUp, FileText, Star, Calendar, PieChart, Activity } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getAnalyticsStats } from "@/services/api";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, PieChart as RechartsPie, Pie, Cell,
@@ -43,13 +45,75 @@ const statusDistribution = [
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState("30d");
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ['analytics', 'stats'],
+    queryFn: getAnalyticsStats,
+    refetchInterval: 30000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const statsData = data?.stats || {
+    total_posts: 0,
+    avg_quality_score: 0,
+    completed_posts: 0,
+    posts_this_week: 0
+  };
 
   const stats = [
-    { label: "Total Posts", value: "26", icon: FileText, change: "+8 this month", changeType: "positive" },
-    { label: "Avg. Quality", value: "8.3", icon: Star, change: "+0.5 vs last month", changeType: "positive" },
-    { label: "Completed", value: "20", icon: Activity, change: "77% success rate", changeType: "neutral" },
-    { label: "This Week", value: "5", icon: Calendar, change: "Posts generated", changeType: "neutral" },
+    { 
+      label: "Total Posts", 
+      value: statsData.total_posts.toString(), 
+      icon: FileText, 
+      change: "Lifetime", 
+      changeType: "neutral" 
+    },
+    { 
+      label: "Avg. Quality", 
+      value: statsData.avg_quality_score.toString(), 
+      icon: Star, 
+      change: "Based on AI score", 
+      changeType: "neutral" 
+    },
+    { 
+      label: "Completed", 
+      value: statsData.completed_posts.toString(), 
+      icon: Activity, 
+      change: `${statsData.total_posts > 0 ? Math.round((statsData.completed_posts / statsData.total_posts) * 100) : 0}% success rate`, 
+      changeType: "neutral" 
+    },
+    { 
+      label: "This Week", 
+      value: statsData.posts_this_week.toString(), 
+      icon: Calendar, 
+      change: "Posts generated", 
+      changeType: "neutral" 
+    },
   ];
+
+  const formatColors: Record<string, string> = {
+    "Text": "hsl(234 62% 50%)",
+    "Carousel": "hsl(220 70% 60%)",
+    "Video": "hsl(152 60% 36%)",
+    "Auto": "hsl(var(--primary))",
+    "Unknown": "hsl(var(--muted))"
+  };
+
+  const formatDistribution = (data?.format_distribution || []).map(item => ({
+    ...item,
+    color: formatColors[item.name] || formatColors["Unknown"]
+  }));
+
+  const statusDistribution = data?.status_distribution || [];
+  const topPosts = data?.top_posts || [];
+  const chartData = data?.daily_activity || [];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -104,12 +168,12 @@ export default function AnalyticsPage() {
               </div>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={postsOverTimeData}>
+                  <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                     <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                    <Bar dataKey="posts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -126,12 +190,12 @@ export default function AnalyticsPage() {
               </div>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={qualityScoreData}>
+                  <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} domain={[0, 10]} />
                     <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }} />
+                    <Line type="monotone" dataKey="avg_score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))", strokeWidth: 0 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -150,18 +214,24 @@ export default function AnalyticsPage() {
                 <h3 className="font-semibold">Format Distribution</h3>
               </div>
               <div className="h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPie>
-                    <Pie data={formatDistribution} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={5} dataKey="value">
-                      {formatDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
-                  </RechartsPie>
-                </ResponsiveContainer>
+                {formatDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie data={formatDistribution} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={5} dataKey="value">
+                        {formatDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                    No data available
+                  </div>
+                )}
               </div>
-              <div className="flex justify-center gap-4 mt-4">
+              <div className="flex justify-center gap-4 mt-4 flex-wrap">
                 {formatDistribution.map((item) => (
                   <div key={item.name} className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
@@ -181,17 +251,24 @@ export default function AnalyticsPage() {
                 <h3 className="font-semibold">Status Breakdown</h3>
               </div>
               <div className="space-y-4">
-                {statusDistribution.map((item) => (
+                {statusDistribution.length > 0 ? statusDistribution.map((item) => (
                   <div key={item.status}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">{item.status}</span>
                       <span className="font-medium">{item.count}</span>
                     </div>
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${item.status === "Completed" ? "bg-success" : item.status === "Processing" ? "bg-primary" : item.status === "Pending" ? "bg-warning" : "bg-destructive"}`} style={{ width: `${(item.count / 26) * 100}%` }} />
+                      <div 
+                        className={`h-full rounded-full ${item.status === "Completed" ? "bg-success" : item.status === "Processing" ? "bg-primary" : item.status === "Pending" ? "bg-warning" : "bg-destructive"}`} 
+                        style={{ width: `${(item.count / (statsData.total_posts || 1)) * 100}%` }} 
+                      />
                     </div>
                   </div>
-                ))}
+                )) : (
+                   <div className="flex items-center justify-center h-[100px] text-muted-foreground text-sm">
+                    No data available
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -202,11 +279,7 @@ export default function AnalyticsPage() {
             <CardContent className="p-6">
               <h3 className="font-semibold mb-4">Top Performing</h3>
               <div className="space-y-3">
-                {[
-                  { idea: "3 lessons from failing...", score: 9.2 },
-                  { idea: "Why I quit my corporate...", score: 8.9 },
-                  { idea: "The networking strategy...", score: 8.7 },
-                ].map((post, index) => (
+                {topPosts.length > 0 ? topPosts.map((post, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">#{index + 1}</div>
                     <div className="flex-1 min-w-0">
@@ -217,7 +290,11 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium">{post.score}</span>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="flex items-center justify-center h-[100px] text-muted-foreground text-sm">
+                    No posts yet
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

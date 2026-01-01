@@ -257,4 +257,34 @@ export async function getPostStatus(postId: string): Promise<{
   return fetchApi(`/api/v1/posts/${postId}/status`);
 }
 
+/**
+ * Get aggregated analytics stats
+ */
+export async function getAnalyticsStats(): Promise<AnalyticsResponse> {
+  return fetchApi<AnalyticsResponse>('/api/v1/history/stats');
+}
+
 export { ApiError };
+
+// ============ Analytics Types ============
+
+export interface AnalyticsStats {
+  total_posts: number;
+  completed_posts: number;
+  avg_quality_score: number;
+  posts_this_week: number;
+}
+
+export interface AnalyticsChartData {
+  date: string;
+  count: number;
+  avg_score: number;
+}
+
+export interface AnalyticsResponse {
+  stats: AnalyticsStats;
+  daily_activity: AnalyticsChartData[];
+  format_distribution: Array<{ name: string; value: number }>;
+  status_distribution: Array<{ status: string; count: number }>;
+  top_posts: Array<{ idea: string; score: number; status: string }>;
+}

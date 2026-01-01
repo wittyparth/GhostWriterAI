@@ -12,10 +12,12 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy import func, desc, cast, Float, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from src.database import get_session
+from src.database.models import GenerationHistory
 from src.database.repositories import (
     GenerationHistoryRepository,
     GenerationEventRepository,
@@ -175,6 +177,160 @@ async def list_generation_histories(
         total=len(items),  # TODO: Add proper count query
         limit=limit,
         offset=offset,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Analytics Endpoint
+# ═══════════════════════════════════════════════════════════════════════════
+
+class AnalyticsStats(BaseModel):
+    total_posts: int
+    completed_posts: int
+    avg_quality_score: float
+    posts_this_week: int
+
+class AnalyticsChartData(BaseModel):
+    date: str
+    count: int = 0
+    avg_score: float = 0.0
+
+class AnalyticsResponse(BaseModel):
+    stats: AnalyticsStats
+    daily_activity: list[AnalyticsChartData]
+    format_distribution: list[dict]
+    status_distribution: list[dict]
+    top_posts: list[dict]
+
+
+@router.get("/stats", response_model=AnalyticsResponse)
+async def get_analytics_stats(
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Get aggregated analytics data for the dashboard/analytics page.
+    """
+    from datetime import timedelta
+    
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # Base query for all visible history
+    repo = GenerationHistoryRepository(session)
+    
+    # 1. Overview Stats
+    # We'll use raw SQL for some complex aggregations to be efficient with JSONB
+    # Note: SQLAlchemy's async session.execute supports raw SQL nicely.
+    
+    # Total Posts & Status Breakdown
+    status_query = select(
+        GenerationHistory.status, 
+        func.count(GenerationHistory.history_id)
+    ).group_by(GenerationHistory.status)
+    
+    status_result = await session.execute(status_query)
+    status_map = {row[0]: row[1] for row in status_result.all()}
+    
+    total_posts = sum(status_map.values())
+    completed_posts = status_map.get("completed", 0)
+    
+    # Posts this week
+    week_query = select(func.count(GenerationHistory.history_id)).where(
+        GenerationHistory.started_at >= week_ago
+    )
+    week_result = await session.execute(week_query)
+    posts_this_week = week_result.scalar() or 0
+    
+    # Average Quality Score (completed posts only)
+    # Extract quality_score from optimizer_output JSON
+    # Note: dependent on DB driver, but we'll try Python-side calculation for simpler robust code 
+    # if dataset is small, or specific JSON operator if we want DB side.
+    # Given typical volume, DB aggregation is better.
+    # Using text() helper for JSON operator ->>
+    avg_score_query = text("""
+        SELECT AVG(CAST(optimizer_output->>'quality_score' AS FLOAT))
+        FROM generation_history
+        WHERE status = 'completed' 
+        AND optimizer_output->>'quality_score' IS NOT NULL
+    """)
+    avg_score_result = await session.execute(avg_score_query)
+    avg_quality_score = avg_score_result.scalar() or 0.0
+    
+    # 2. Daily Activity (Last 30 days)
+    # Group by date
+    daily_query = text("""
+        SELECT 
+            TO_CHAR(started_at, 'YYYY-MM-DD') as date_str,
+            COUNT(*) as count,
+            AVG(CAST(optimizer_output->>'quality_score' AS FLOAT)) as avg_score
+        FROM generation_history
+        WHERE started_at >= :month_ago
+        GROUP BY date_str
+        ORDER BY date_str ASC
+    """)
+    
+    daily_result = await session.execute(daily_query, {"month_ago": month_ago})
+    daily_data = []
+    
+    # map results to daily_Activity
+    rows = daily_result.fetchall()
+    # Fill in missing days in frontend or here? Let's send available days.
+    for row in rows:
+        daily_data.append(AnalyticsChartData(
+            date=row[0],
+            count=row[1],
+            avg_score=round(row[2] or 0, 1)
+        ))
+        
+    # 3. Format Distribution
+    # Use final_post->format or preferred_format
+    format_query = text("""
+        SELECT 
+            COALESCE(final_post->>'format', preferred_format, 'unknown') as fmt,
+            COUNT(*)
+        FROM generation_history
+        GROUP BY fmt
+    """)
+    format_result = await session.execute(format_query)
+    format_dist = [{"name": row[0].capitalize(), "value": row[1]} for row in format_result.fetchall()]
+    
+    # Status Distribution formatted
+    status_dist = [{"status": k.capitalize(), "count": v} for k, v in status_map.items()]
+    
+    # 4. Top Posts (by score)
+    top_posts_query = text("""
+        SELECT 
+            raw_idea, 
+            CAST(optimizer_output->>'quality_score' AS FLOAT) as score,
+            status
+        FROM generation_history
+        WHERE status = 'completed' 
+        AND optimizer_output->>'quality_score' IS NOT NULL
+        ORDER BY score DESC
+        LIMIT 5
+    """)
+    top_result = await session.execute(top_posts_query)
+    top_posts = [
+        {
+            "idea": row[0][:60] + "..." if len(row[0]) > 60 else row[0], 
+            "score": row[1],
+            "status": row[2]
+        } 
+        for row in top_result.fetchall()
+    ]
+    
+    return AnalyticsResponse(
+        stats=AnalyticsStats(
+            total_posts=total_posts,
+            completed_posts=completed_posts,
+            avg_quality_score=round(avg_quality_score, 1),
+            posts_this_week=posts_this_week,
+        ),
+        daily_activity=daily_data,
+        format_distribution=format_dist,
+        status_distribution=status_dist,
+        top_posts=top_posts,
     )
 
 
