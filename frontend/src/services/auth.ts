@@ -238,4 +238,14 @@ export async function updateProfile(data: { name?: string }): Promise<User> {
   });
 }
 
+export interface UsageData {
+  posts_used_today: number;
+  daily_limit: number;
+  credits_remaining: number;
+}
+
+export async function getUsage(): Promise<UsageData> {
+  return authFetch<UsageData>('/api/v1/auth/usage');
+}
+
 export { authFetch };

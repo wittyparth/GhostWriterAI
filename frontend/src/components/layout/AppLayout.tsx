@@ -18,6 +18,8 @@ import {
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+import { CreditDisplay } from "@/components/shared/CreditDisplay";
+
 const navItems = [
   { to: "/app/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/app/generate", icon: Sparkles, label: "New Post" },
@@ -77,6 +79,13 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Credit Display */}
+        {!sidebarCollapsed && (
+          <div className="px-3 mb-2">
+            <CreditDisplay />
+          </div>
+        )}
 
         {/* Collapse toggle */}
         <button

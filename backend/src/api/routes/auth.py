@@ -431,6 +431,32 @@ async def update_me(
     }
 
 
+
+class UsageResponse(BaseModel):
+    posts_used_today: int
+    daily_limit: int
+    credits_remaining: int
+
+
+@router.get("/usage", response_model=UsageResponse)
+async def get_usage(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Get the current user's daily usage.
+    """
+    from src.database.repositories.base import PostRepository
+    post_repo = PostRepository(session)
+    count = await post_repo.count_today(user.user_id)
+    limit = settings.free_tier_daily_limit
+    
+    return UsageResponse(
+        posts_used_today=count,
+        daily_limit=limit,
+        credits_remaining=max(0, limit - count),
+    )
+
 @router.post("/logout")
 async def logout():
     """
