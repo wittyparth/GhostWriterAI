@@ -81,6 +81,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Post-ID"],
 )
 app.add_middleware(RateLimitMiddleware, requests_per_minute=30)
 
