@@ -7,72 +7,75 @@
 
 @layer base {
   :root {
-    /* Clean Light Theme - Warm, refined palette */
-    --background: 40 20% 99%;
-    --background-secondary: 40 15% 97%;
-    --background-tertiary: 40 12% 95%;
-    --foreground: 20 14% 12%;
+    /* Clean Light Theme - Soft Slate Palette for better visibility */
+    /* Background: Soft Light Grey/Blue (Slate-50 equivalent) to reduce glare */
+    --background: 210 40% 98%; 
+    --background-secondary: 210 40% 96.1%;
+    --background-tertiary: 210 40% 93%;
     
-    /* Card & Surfaces */
+    /* Foreground: Deep, rich dark slate for sharp contrast */
+    --foreground: 222.2 47.4% 11.2%;
+
+    /* Card & Surfaces: Pure white for pop against soft background */
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 12%;
+    --card-foreground: 222.2 47.4% 11.2%;
     
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 12%;
+    --popover-foreground: 222.2 47.4% 11.2%;
     
-    /* Primary - Refined Indigo */
-    --primary: 234 62% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Refined Indigo (Slightly darker for better visual weight) */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
     
     /* Secondary */
-    --secondary: 40 10% 94%;
-    --secondary-foreground: 20 14% 30%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
     
-    /* Muted */
-    --muted: 40 10% 94%;
-    --muted-foreground: 20 8% 50%;
+    /* Muted - Darker grey for better readability of secondary text */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 40%; /* Darker than before (was 50%) */
     
     /* Accent */
-    --accent: 40 12% 92%;
-    --accent-foreground: 20 14% 20%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     
     /* Destructive */
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
     
     /* Success */
-    --success: 152 60% 36%;
-    --success-foreground: 0 0% 100%;
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 355.7 100% 97.3%;
     
     /* Warning */
-    --warning: 32 90% 50%;
-    --warning-foreground: 20 14% 12%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 48 96% 89%;
     
-    /* Border & Input */
-    --border: 40 10% 88%;
-    --input: 40 10% 88%;
-    --ring: 234 62% 50%;
+    /* Border & Input - Slightly darker for better definition */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     
-    /* Radius - More refined */
+    /* Radius */
     --radius: 0.5rem;
     
-    /* Agent Colors - Muted, professional */
-    --agent-validator: 195 60% 42%;
-    --agent-strategist: 258 50% 52%;
-    --agent-writer: 152 50% 38%;
-    --agent-visual: 32 70% 48%;
-    --agent-optimizer: 220 60% 52%;
+    /* Agent Colors - Updated for new palette */
+    --agent-validator: 199 89% 48%;
+    --agent-strategist: 262 83% 58%;
+    --agent-writer: 142 71% 45%;
+    --agent-visual: 32 95% 44%;
+    --agent-optimizer: 221 83% 53%;
     
-    /* Sidebar */
-    --sidebar-background: 40 15% 97%;
-    --sidebar-foreground: 20 14% 30%;
-    --sidebar-primary: 234 62% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 12% 92%;
-    --sidebar-accent-foreground: 20 14% 20%;
-    --sidebar-border: 40 10% 88%;
-    --sidebar-ring: 234 62% 50%;
+    /* Sidebar - Matches secondary background for consistency */
+    --sidebar-background: 0 0% 100%; /* Make sidebar white to distinguish from grey main bg */
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
