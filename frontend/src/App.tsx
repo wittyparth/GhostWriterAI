@@ -16,6 +16,7 @@ import BrandProfilePage from "./pages/BrandProfilePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -32,7 +33,11 @@ const App = () => (
           <Route path="/signup" element={<SignupPage />} />
           
           {/* Protected App Routes */}
-          <Route path="/app" element={<AppLayout />}>
+          <Route path="/app" element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }>
             <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="generate" element={<PostGeneratorPage />} />
@@ -53,3 +58,4 @@ const App = () => (
 );
 
 export default App;
+

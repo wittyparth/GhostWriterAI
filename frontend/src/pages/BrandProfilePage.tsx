@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,39 +20,93 @@ import {
   Save,
   Edit,
   Camera,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-
-const initialProfile = {
-  name: "Alex Johnson",
-  title: "Founder & CEO at TechStartup | Helping founders build better products",
-  bio: "Serial entrepreneur with 3 exits. I write about startup lessons, product strategy, and the journey of building companies from 0 to 1.",
-  avatar_url: "",
-  content_pillars: [
-    { id: "1", name: "Startup Lessons", description: "Insights from building and failing at startups", color: "#4F46E5" },
-    { id: "2", name: "Product Strategy", description: "How to build products users love", color: "#0077b5" },
-    { id: "3", name: "Leadership", description: "Managing teams and company culture", color: "#059669" },
-  ],
-  target_audience: "Founders, entrepreneurs, product managers, and aspiring startup builders looking for actionable insights and real-world lessons.",
-  voice_tone: {
-    formality: 40,
-    humor: 30,
-    emotion: 60,
-    technicality: 50,
-  },
-};
+import { 
+  getBrandProfile, 
+  updateBrandProfile, 
+  addContentPillar,
+  removeContentPillar,
+  BrandProfile,
+  ContentPillar,
+  VoiceTone,
+} from "@/services/brandProfile";
+import { useAuthStore } from "@/stores/authStore";
 
 const pillarColors = ["#4F46E5", "#0077b5", "#059669", "#D97706", "#DC2626", "#DB2777"];
 
+const defaultProfile = {
+  name: "Your Name",
+  title: "",
+  bio: "",
+  content_pillars: [] as ContentPillar[],
+  target_audience: "",
+  voice_tone: {
+    formality: 50,
+    humor: 50,
+    emotion: 50,
+    technicality: 50,
+  } as VoiceTone,
+  brand_colors: [] as string[],
+};
+
 export default function BrandProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState(initialProfile);
+  const [profile, setProfile] = useState(defaultProfile);
   const [newPillar, setNewPillar] = useState({ name: "", description: "", color: pillarColors[0] });
   const [showAddPillar, setShowAddPillar] = useState(false);
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  // Fetch brand profile
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['brandProfile'],
+    queryFn: getBrandProfile,
+    retry: false,
+  });
+
+  // Update profile when data loads
+  useEffect(() => {
+    if (data) {
+      setProfile({
+        name: data.name || user?.name || "Your Name",
+        title: data.title || "",
+        bio: data.bio || "",
+        content_pillars: data.content_pillars || [],
+        target_audience: data.target_audience || "",
+        voice_tone: data.voice_tone || defaultProfile.voice_tone,
+        brand_colors: data.brand_colors || [],
+      });
+    } else if (user) {
+      setProfile(prev => ({ ...prev, name: user.name }));
+    }
+  }, [data, user]);
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: updateBrandProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['brandProfile'] });
+      setIsEditing(false);
+      toast.success("Brand profile saved successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to save profile");
+    },
+  });
 
   const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Brand profile saved successfully!");
+    saveMutation.mutate({
+      name: profile.name,
+      title: profile.title,
+      bio: profile.bio,
+      content_pillars: profile.content_pillars,
+      target_audience: profile.target_audience,
+      voice_tone: profile.voice_tone,
+      brand_colors: profile.brand_colors,
+    });
   };
 
   const addPillar = () => {
@@ -59,9 +114,15 @@ export default function BrandProfilePage() {
       toast.error("Please enter a pillar name");
       return;
     }
+    const pillar: ContentPillar = {
+      id: Date.now().toString(),
+      name: newPillar.name,
+      description: newPillar.description,
+      color: newPillar.color,
+    };
     setProfile({
       ...profile,
-      content_pillars: [...profile.content_pillars, { id: Date.now().toString(), ...newPillar }],
+      content_pillars: [...profile.content_pillars, pillar],
     });
     setNewPillar({ name: "", description: "", color: pillarColors[0] });
     setShowAddPillar(false);
@@ -76,12 +137,20 @@ export default function BrandProfilePage() {
     toast.success("Content pillar removed");
   };
 
-  const updateVoiceTone = (key: keyof typeof profile.voice_tone, value: number[]) => {
+  const updateVoiceTone = (key: keyof VoiceTone, value: number[]) => {
     setProfile({
       ...profile,
       voice_tone: { ...profile.voice_tone, [key]: value[0] },
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

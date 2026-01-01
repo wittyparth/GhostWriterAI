@@ -92,6 +92,16 @@ class Settings(BaseSettings):
         description="Requests per minute per user",
     )
     
+    # ========== Authentication ==========
+    jwt_secret: str = Field(
+        default="development-secret-key-change-in-production",
+        description="Secret key for JWT token signing",
+    )
+    frontend_url: str = Field(
+        default="http://localhost:5173",
+        description="Frontend application URL for CORS",
+    )
+    
     # ========== Cost Management ==========
     daily_cost_budget: float = Field(
         default=10.0,

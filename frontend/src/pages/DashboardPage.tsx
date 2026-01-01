@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sparkles,
   FileText,
@@ -12,49 +13,80 @@ import {
   History,
   User,
   Zap,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuthStore } from "@/stores/authStore";
+import { getHistoryList } from "@/services/api";
 
-const stats = [
-  { label: "Total Posts", value: "24", icon: FileText, trend: "+3 this week" },
-  { label: "Avg Score", value: "8.5", icon: Star, trend: "+0.3 vs last month" },
-  { label: "This Week", value: "4", icon: TrendingUp, trend: "On track" },
-];
+// Helper to format time ago
+const formatTimeAgo = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-const recentPosts = [
-  {
-    id: "1",
-    idea: "3 lessons I learned from failing my first startup after 18 months",
-    status: "completed",
-    createdAt: "2 hours ago",
-    score: 9.2,
-    format: "text",
-  },
-  {
-    id: "2",
-    idea: "Why I quit my $300K job at Google to build a startup",
-    status: "completed",
-    createdAt: "1 day ago",
-    score: 8.7,
-    format: "carousel",
-  },
-  {
-    id: "3",
-    idea: "The 5-minute morning routine that 10x'd my productivity",
-    status: "processing",
-    createdAt: "2 days ago",
-    score: null,
-    format: "text",
-  },
-];
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+};
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
+  
+  // Fetch recent generations
+  const { data: historyData, isLoading } = useQuery({
+    queryKey: ['dashboardHistory'],
+    queryFn: () => getHistoryList(5, 0),
+    staleTime: 60000, // 1 minute
+  });
+
+  // Calculate stats from history
+  const histories = historyData?.histories || [];
+  const totalPosts = historyData?.total || 0;
+  const completedPosts = histories.filter(h => h.status === "completed");
+  const avgScore = completedPosts.length > 0 
+    ? completedPosts.reduce((sum, h) => sum + (h.quality_score || 0), 0) / completedPosts.length 
+    : 0;
+  const thisWeekCount = histories.filter(h => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return new Date(h.started_at) > weekAgo;
+  }).length;
+
+  const stats = [
+    { label: "Total Posts", value: String(totalPosts), icon: FileText, trend: `${thisWeekCount} this week` },
+    { label: "Avg Score", value: avgScore ? avgScore.toFixed(1) : "N/A", icon: Star, trend: "Quality rating" },
+    { label: "This Week", value: String(thisWeekCount), icon: TrendingUp, trend: thisWeekCount >= 3 ? "On track" : "Keep going!" },
+  ];
+
+  // Format recent posts for display
+  const recentPosts = histories.slice(0, 3).map(h => ({
+    id: h.history_id,
+    idea: h.raw_idea,
+    status: h.status,
+    createdAt: formatTimeAgo(h.started_at),
+    score: h.quality_score,
+    format: h.format || "text",
+  }));
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Good morning, Alex</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{getGreeting()}, {user?.name?.split(' ')[0] || "there"}</h1>
           <p className="text-muted-foreground mt-1">
             Here's what's happening with your content
           </p>

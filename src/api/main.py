@@ -26,6 +26,8 @@ from src.orchestration import run_generation, continue_generation, AgentState
 from src.api.routes.posts import router as posts_router
 from src.api.routes.streaming import router as streaming_router
 from src.api.routes.history import router as history_router
+from src.api.routes.auth import router as auth_router
+from src.api.routes.brand_profile import router as brand_profile_router
 from src.api.middleware.rate_limit import RateLimitMiddleware
 from src.services.health import get_health_service
 from src.services.cache import get_cache_service
@@ -75,7 +77,7 @@ app = FastAPI(
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", settings.frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,9 +85,11 @@ app.add_middleware(
 app.add_middleware(RateLimitMiddleware, requests_per_minute=30)
 
 # Include routers
+app.include_router(auth_router)
 app.include_router(posts_router)
 app.include_router(streaming_router)
 app.include_router(history_router)
+app.include_router(brand_profile_router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["system"])
