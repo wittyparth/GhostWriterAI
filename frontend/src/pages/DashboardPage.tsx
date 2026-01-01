@@ -16,6 +16,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/stores/authStore";
 import { getHistoryList } from "@/services/api";
 
@@ -44,6 +45,84 @@ export default function DashboardPage() {
     queryFn: () => getHistoryList(5, 0),
     staleTime: 60000, // 1 minute
   });
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Welcome Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-xl" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Quick Actions Skeleton */}
+        <div>
+           <Skeleton className="h-6 w-32 mb-4" />
+           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                 <Card key={i} className="h-full">
+                    <CardContent className="p-5 flex flex-col items-center gap-3">
+                       <Skeleton className="h-12 w-12 rounded-xl" />
+                       <div className="space-y-2 w-full flex flex-col items-center">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-3 w-16" />
+                       </div>
+                    </CardContent>
+                 </Card>
+              ))}
+           </div>
+        </div>
+
+        {/* Recent Posts Skeleton */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-9 w-24" />
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                     <div className="flex-1 space-y-2">
+                        <div className="flex gap-2">
+                           <Skeleton className="h-5 w-16 rounded-full" />
+                           <Skeleton className="h-5 w-12 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-24" />
+                     </div>
+                     <Skeleton className="h-6 w-12 rounded-md" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate stats from history
   const histories = historyData?.histories || [];

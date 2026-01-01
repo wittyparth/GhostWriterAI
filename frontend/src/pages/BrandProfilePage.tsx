@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,8 +147,44 @@ export default function BrandProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-4 w-60" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+        </div>
+
+        {/* Profile Header Skeleton */}
+        <Card>
+            <CardContent className="p-6">
+                <div className="flex items-start gap-6">
+                    <Skeleton className="h-20 w-20 rounded-xl" />
+                    <div className="flex-1 space-y-3">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                    </div>
+                </div>
+                <div className="mt-6 space-y-2">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-20 w-full" />
+                </div>
+            </CardContent>
+        </Card>
+        
+        {/* Other Cards Skeletons (Pillars, Audience, Voice) */}
+        {Array.from({ length: 3 }).map((_, i) => (
+             <Card key={i}>
+                <CardContent className="p-6">
+                    <div className="space-y-4">
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-24 w-full" />
+                    </div>
+                </CardContent>
+             </Card>
+        ))}
       </div>
     );
   }

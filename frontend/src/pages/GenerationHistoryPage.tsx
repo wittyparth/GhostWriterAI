@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,8 +138,56 @@ export default function GenerationHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-40" />
+        </div>
+
+        {/* Search Skeleton */}
+        <Card className="p-4">
+          <Skeleton className="h-9 w-full rounded-md" />
+        </Card>
+
+        {/* List Skeleton */}
+        <div className="grid gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+             <Card key={i} className="overflow-hidden border-l-4 border-l-muted">
+                <div className="p-5">
+                   <div className="flex justify-between mb-3">
+                      <div className="flex gap-3">
+                         <Skeleton className="h-6 w-24 rounded-full" />
+                         <Skeleton className="h-6 w-20" />
+                      </div>
+                      <Skeleton className="h-6 w-24" />
+                   </div>
+                   <Skeleton className="h-7 w-3/4 mb-4" />
+                   <div className="space-y-2">
+                      <div className="flex justify-between">
+                         <Skeleton className="h-3 w-32" />
+                         <Skeleton className="h-3 w-24" />
+                      </div>
+                      <Skeleton className="h-2 w-full rounded-full" />
+                      <div className="flex justify-between mt-3 pt-3 border-t border-border/50">
+                          {Array.from({ length: 5 }).map((_, s) => (
+                             <div key={s} className="flex flex-col items-center gap-1.5 flex-1">
+                                <Skeleton className="h-8 w-8 rounded-lg" />
+                                <Skeleton className="h-2 w-10" />
+                             </div>
+                          ))}
+                      </div>
+                   </div>
+                </div>
+                <div className="px-5 py-3 bg-muted/30 border-t border-border/50">
+                    <Skeleton className="h-4 w-48" />
+                </div>
+             </Card>
+          ))}
+        </div>
       </div>
     );
   }

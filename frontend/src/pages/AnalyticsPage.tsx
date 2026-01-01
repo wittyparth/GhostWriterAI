@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, TrendingUp, FileText, Star, Calendar, PieChart, Activity } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAnalytics } from "@/services/posts";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,13 +22,56 @@ export default function AnalyticsPage() {
     refetchInterval: 30000,
   });
 
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-[160px]" />
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Charts Grid Skeleton */}
+        <div className="grid lg:grid-cols-2 gap-6">
+           <Card className="h-[350px]">
+             <CardContent className="p-6 h-full flex flex-col">
+               <Skeleton className="h-6 w-40 mb-6" />
+               <Skeleton className="flex-1 w-full rounded-md" />
+             </CardContent>
+           </Card>
+           <Card className="h-[350px]">
+             <CardContent className="p-6 h-full flex flex-col">
+               <Skeleton className="h-6 w-40 mb-6" />
+               <Skeleton className="flex-1 w-full rounded-md" />
+             </CardContent>
+           </Card>
+        </div>
       </div>
     );
   }
+
 
   // Calculate derived stats
   const completedCount = data?.status_distribution.find(s => s.status === 'completed' || s.status === 'published')?.count || 0;

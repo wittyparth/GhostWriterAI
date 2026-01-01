@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -143,9 +144,7 @@ export default function PostHistoryPage() {
     }
   };
 
-  if (isLoading) {
-    return <div className="p-8 text-center">Loading posts...</div>;
-  }
+
 
   return (
     <div className="space-y-8">
@@ -236,7 +235,33 @@ export default function PostHistoryPage() {
       </div>
 
       {/* Posts Grid/List */}
-      {paginatedPosts.length > 0 ? (
+      {isLoading ? (
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="h-[240px] p-5 flex flex-col">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-md" />
+              </div>
+              <div className="space-y-2 flex-grow">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[90%]" />
+                <Skeleton className="h-4 w-[60%]" />
+              </div>
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+                <div className="flex gap-2">
+                   <Skeleton className="h-5 w-16 rounded-full" />
+                   <Skeleton className="h-5 w-8" />
+                </div>
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : paginatedPosts.length > 0 ? (
         <div
           className={
             viewMode === "grid"
