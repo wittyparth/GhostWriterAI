@@ -240,21 +240,163 @@ class ChromaDBStore(VectorStoreBase):
             logger.info("ChromaDB persisted to disk")
 
 
+class PineconeStore(VectorStoreBase):
+    """
+    Pinecone implementation for production.
+    """
+    
+    def __init__(self, index_name: str | None = None):
+        """
+        Initialize Pinecone vector store.
+        """
+        self.settings = get_settings()
+        self.index_name = index_name or self.settings.pinecone_index_name
+        self._index = None
+        self._gemini = get_gemini_client()
+        
+    @property
+    def index(self):
+        """Lazy-load Pinecone index."""
+        if self._index is None:
+            from pinecone import Pinecone
+            
+            if not self.settings.pinecone_api_key:
+                raise ValueError("Pinecone API key not found in settings")
+                
+            pc = Pinecone(api_key=self.settings.pinecone_api_key.get_secret_value())
+            self._index = pc.Index(self.index_name)
+            logger.info(f"Pinecone index initialized: {self.index_name}")
+            
+        return self._index
+    
+    async def add_documents(
+        self,
+        documents: list[str],
+        metadatas: list[dict[str, Any]] | None = None,
+        ids: list[str] | None = None,
+        namespace: str | None = None,
+    ) -> list[str]:
+        """Add documents to Pinecone."""
+        if not documents:
+            return []
+            
+        # Generate IDs if not provided
+        doc_ids = ids or [str(uuid4()) for _ in documents]
+        
+        # Generate embeddings
+        embeddings = await self._gemini.embed(documents, task_type="retrieval_document")
+        
+        # Prepare batch for upsert
+        vectors = []
+        metas = metadatas or [{} for _ in documents]
+        
+        for i, (doc, meta, emb, doc_id) in enumerate(zip(documents, metas, embeddings, doc_ids)):
+            # Pinecone metadata must be int, float, str, bool, or list of strings
+            # We add the content as "text" in metadata for retrieval
+            safe_meta = meta.copy()
+            safe_meta["text"] = doc
+            
+            vectors.append({
+                "id": doc_id,
+                "values": emb,
+                "metadata": safe_meta
+            })
+            
+        # Upsert to Pinecone
+        self.index.upsert(vectors=vectors, namespace=namespace or "")
+        
+        logger.info(f"Added {len(documents)} documents to Pinecone (namespace: {namespace})")
+        return doc_ids
+    
+    async def search(
+        self,
+        query: str,
+        top_k: int = RAG_TOP_K_DEFAULT,
+        namespace: str | None = None,
+        filter_metadata: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Search Pinecone."""
+        # Generate query embedding
+        query_embedding = await self._gemini.embed_single(query, task_type="retrieval_query")
+        
+        response = self.index.query(
+            vector=query_embedding,
+            top_k=top_k,
+            namespace=namespace or "",
+            include_metadata=True,
+            filter=filter_metadata
+        )
+        
+        formatted = []
+        for match in response.matches:
+            if match.score >= RAG_SIMILARITY_THRESHOLD:
+                meta = match.metadata or {}
+                content = meta.pop("text", "") # Extract content from metadata
+                
+                formatted.append({
+                    "id": match.id,
+                    "content": content,
+                    "metadata": meta,
+                    "score": match.score,
+                })
+                
+        return formatted
+    
+    async def delete(
+        self,
+        ids: list[str],
+        namespace: str | None = None,
+    ) -> None:
+        """Delete from Pinecone."""
+        self.index.delete(ids=ids, namespace=namespace or "")
+        logger.info(f"Deleted {len(ids)} documents from Pinecone")
+        
+    async def get_by_id(
+        self,
+        doc_id: str,
+        namespace: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Get doc by ID."""
+        response = self.index.fetch(ids=[doc_id], namespace=namespace or "")
+        
+        if not response.vectors or doc_id not in response.vectors:
+            return None
+            
+        vector = response.vectors[doc_id]
+        meta = vector.metadata or {}
+        content = meta.pop("text", "")
+        
+        return {
+            "id": vector.id,
+            "content": content,
+            "metadata": meta,
+        }
+
+
 # Factory function
-def get_vector_store(store_type: str = "chromadb") -> VectorStoreBase:
+def get_vector_store(store_type: str | None = None) -> VectorStoreBase:
     """
     Get a vector store instance.
     
     Args:
-        store_type: Type of store ("chromadb" or "pinecone")
+        store_type: Type of store ("chromadb" or "pinecone"). 
+                   If None, auto-detects based on settings/env.
         
     Returns:
         Vector store instance
     """
+    settings = get_settings()
+    
+    # Auto-detect if not specified
+    if store_type is None:
+        if settings.pinecone_api_key and settings.pinecone_api_key.get_secret_value():
+            store_type = "pinecone"
+        else:
+            store_type = "chromadb"
+            
     if store_type == "chromadb":
         return ChromaDBStore()
     elif store_type == "pinecone":
-        # TODO: Implement PineconeStore for production
-        raise NotImplementedError("Pinecone store not yet implemented")
+        return PineconeStore()
     else:
         raise ValueError(f"Unknown vector store type: {store_type}")

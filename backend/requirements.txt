@@ -12,6 +12,7 @@ langgraph
 
 # RAG and Vector Store
 chromadb
+pinecone-client
 
 # Database
 sqlalchemy[asyncio]
