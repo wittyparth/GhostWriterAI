@@ -103,6 +103,12 @@ class PostRepository(BaseRepository):
     async def get_by_id(self, post_id: UUID) -> Post | None:
         """Get post by ID (override base to use post_id)."""
         return await self.session.get(Post, post_id)
+    
+    async def delete_by_id(self, post_id: UUID) -> bool:
+        """Delete a post by ID (override base to use post_id)."""
+        stmt = delete(Post).where(Post.post_id == post_id)
+        result = await self.session.execute(stmt)
+        return result.rowcount > 0
 
 
 class ReferencePostRepository(BaseRepository):
