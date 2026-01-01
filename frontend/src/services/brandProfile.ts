@@ -60,8 +60,8 @@ export interface ProfileSummary {
 /**
  * Get current user's brand profile
  */
-export async function getBrandProfile(): Promise<BrandProfile> {
-  return authFetch<BrandProfile>('/api/v1/brand-profile/');
+export async function getBrandProfile(): Promise<BrandProfile | null> {
+  return authFetch<BrandProfile | null>('/api/v1/brand-profile/');
 }
 
 /**

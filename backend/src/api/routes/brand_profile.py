@@ -116,10 +116,7 @@ async def get_brand_profile(
     profile = result.scalar_one_or_none()
     
     if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Brand profile not found. Create one first."
-        )
+        return None
     
     return _serialize_profile(profile, user)
 
