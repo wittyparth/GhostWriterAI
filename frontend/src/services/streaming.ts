@@ -5,6 +5,7 @@
  */
 
 import { API_BASE_URL, IdeaInput } from './api';
+import { getAccessToken } from './auth';
 
 // ============ Types for Streaming ============
 
@@ -56,12 +57,19 @@ export function streamGeneration(
   
   const startStream = async () => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      };
+      
+      const token = getAccessToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/generate/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
+        headers,
         body: JSON.stringify(input),
         signal: controller.signal,
       });
@@ -138,12 +146,19 @@ export function streamAnswers(
   
   const startStream = async () => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      };
+      
+      const token = getAccessToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}/answers/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
+        headers,
         body: JSON.stringify(answers),
         signal: controller.signal,
       });

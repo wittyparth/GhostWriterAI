@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
 from src.database.repositories.base import PostRepository
+from src.database.models import User
+from src.api.routes.auth import get_current_user
 from src.models.schemas import (
     IdeaInput,
     AgentThoughtsResponse,
@@ -80,6 +82,7 @@ async def _stream_events(
 async def generate_post_with_stream(
     request: IdeaInput,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Start post generation with real-time streaming of agent thoughts.
@@ -111,12 +114,23 @@ async def generate_post_with_stream(
     async def run_generation_task():
         """Background task to run the generation."""
         try:
+            # Create initial post record
+            post_repo = PostRepository(session)
+            await post_repo.create(
+                post_id=UUID(post_id),
+                user_id=user.user_id,
+                raw_idea=request.raw_idea,
+                format=request.preferred_format or "text",
+                status="processing",
+            )
+
             # Create history record at start
             await history_service.create_history(
                 post_id=post_id,
                 raw_idea=request.raw_idea,
                 preferred_format=request.preferred_format,
                 brand_profile={},
+                user_id=user.user_id,
             )
             
             state, tracker = await run_generation_with_tracking(
@@ -286,8 +300,8 @@ async def submit_answers_with_stream(
             if hashtags:
                 final_content += f"\n\n{' '.join('#' + h for h in hashtags)}"
             
-            await post_repo.create(
-                raw_idea=state["raw_idea"],
+            await post_repo.update(
+                post_id=UUID(post_id),
                 final_content=final_content,
                 format=final_state.get("format", "text"),
                 status="completed",

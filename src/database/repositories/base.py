@@ -93,6 +93,16 @@ class PostRepository(BaseRepository):
         stmt = select(Post).where(Post.user_id == user_id).order_by(Post.created_at.desc()).limit(count)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+    
+    async def update(self, post_id: UUID, **kwargs) -> Post | None:
+        """Update a post by ID."""
+        stmt = update(Post).where(Post.post_id == post_id).values(**kwargs)
+        await self.session.execute(stmt)
+        return await self.get_by_id(post_id)
+    
+    async def get_by_id(self, post_id: UUID) -> Post | None:
+        """Get post by ID (override base to use post_id)."""
+        return await self.session.get(Post, post_id)
 
 
 class ReferencePostRepository(BaseRepository):
