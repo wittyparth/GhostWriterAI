@@ -198,6 +198,10 @@ async def list_posts(
     }
 
 
+from src.database.repositories.history import GenerationHistoryRepository
+
+# ... (keep existing imports, I will insert this one separately or grouped)
+
 @router.delete("/{post_id}", status_code=204)
 async def delete_post(
     post_id: str,
@@ -206,6 +210,7 @@ async def delete_post(
 ):
     """Delete a post."""
     post_repo = PostRepository(session)
+    history_repo = GenerationHistoryRepository(session)
     post_uuid = UUID(post_id)
     
     # Check ownership
@@ -215,6 +220,9 @@ async def delete_post(
     
     if post.user_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+    
+    # Delete history first (manual cascade)
+    await history_repo.delete_by_post_id(post_uuid)
     
     await post_repo.delete_by_id(post_uuid)
     return None

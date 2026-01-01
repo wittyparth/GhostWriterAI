@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Sequence
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -205,6 +205,22 @@ class GenerationHistoryRepository:
         ).values(selected_hook_index=hook_index)
         await self.session.execute(stmt)
         return await self.get_by_post_id(post_id)
+    
+    async def delete_by_post_id(self, post_id: UUID) -> bool:
+        """Delete history and dependent events by post ID."""
+        history = await self.get_by_post_id(post_id)
+        if not history:
+            return False
+            
+        # Delete events first (manual cascade)
+        stmt_events = delete(GenerationEvent).where(GenerationEvent.history_id == history.history_id)
+        await self.session.execute(stmt_events)
+        
+        # Delete history
+        stmt_history = delete(GenerationHistory).where(GenerationHistory.history_id == history.history_id)
+        await self.session.execute(stmt_history)
+        
+        return True
 
 
 class GenerationEventRepository:
