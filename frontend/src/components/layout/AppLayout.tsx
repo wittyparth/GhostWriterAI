@@ -48,11 +48,11 @@ export default function AppLayout() {
         <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-              P
+              G
             </div>
             {!sidebarCollapsed && (
               <span className="font-semibold text-sidebar-foreground group-hover:text-primary transition-colors">
-                PostAI
+                GhostWriter AI
               </span>
             )}
           </Link>
@@ -134,9 +134,9 @@ export default function AppLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-background/95 backdrop-blur-sm border-b border-border flex items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-            P
+            G
           </div>
-          <span className="font-semibold">PostAI</span>
+          <span className="font-semibold">GhostWriter AI</span>
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -188,13 +188,19 @@ export default function AppLayout() {
       {/* Main content */}
       <main
         className={cn(
-          "flex-1 min-h-screen pt-14 lg:pt-0 transition-all duration-300",
+          "flex-1 min-h-screen pt-14 lg:pt-0 transition-all duration-300 flex flex-col",
           sidebarCollapsed ? "lg:ml-16" : "lg:ml-60"
         )}
       >
-        <div className="p-6 lg:p-8 max-w-7xl">
+        <div className="p-6 lg:p-8 max-w-7xl flex-1">
           <Outlet />
         </div>
+        <footer className="py-6 border-t border-border mt-auto">
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <p className="text-sm text-muted-foreground font-medium">GhostWriter AI</p>
+            <p className="text-xs text-muted-foreground/60">Created by Partha Saradhi 2026</p>
+          </div>
+        </footer>
       </main>
     </div>
   );

@@ -31,7 +31,7 @@ export function Logo({ className, size = "md", showText = true }: LogoProps) {
       </div>
       {showText && (
         <span className={cn("font-display font-bold text-foreground", sizes[size].text)}>
-          PostAI
+          GhostWriter AI
         </span>
       )}
     </motion.div>

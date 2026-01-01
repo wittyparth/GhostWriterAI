@@ -32,9 +32,9 @@ const steps = [
 ];
 
 const testimonials = [
-  { name: "Sarah Chen", role: "Founder & CEO", quote: "PostAI transformed my LinkedIn presence. I went from 100 to 10,000 impressions per post." },
+  { name: "Sarah Chen", role: "Founder & CEO", quote: "GhostWriter AI transformed my LinkedIn presence. I went from 100 to 10,000 impressions per post." },
   { name: "Marcus Johnson", role: "Content Creator", quote: "The hook variations are incredible. Every post feels fresh and engaging." },
-  { name: "Elena Rodriguez", role: "Marketing Director", quote: "We use PostAI for our entire team. The brand voice consistency is unmatched." },
+  { name: "Elena Rodriguez", role: "Marketing Director", quote: "We use GhostWriter AI for our entire team. The brand voice consistency is unmatched." },
 ];
 
 export default function LandingPage() {
@@ -43,7 +43,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="font-semibold text-lg">PostAI</span>
+          <span className="font-semibold text-lg">GhostWriter AI</span>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
@@ -287,7 +287,7 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Create Viral Content?</h2>
           <p className="text-muted-foreground mb-8">
-            Join 10,000+ creators who are already using PostAI to grow their LinkedIn presence.
+            Join 10,000+ creators who are already using GhostWriter AI to grow their LinkedIn presence.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" asChild>
@@ -300,12 +300,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-border">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-semibold">PostAI</span>
-          <p className="text-sm text-muted-foreground">
-            © 2024 PostAI. All rights reserved.
-          </p>
+      <footer className="py-12 border-t border-border bg-muted/10">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center gap-4 text-center px-6">
+            <span className="font-semibold text-lg">GhostWriter AI</span>
+            <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">© 2026 GhostWriter AI. All rights reserved.</p>
+                <p className="text-xs text-muted-foreground/60">Created by Partha Saradhi 2026</p>
+            </div>
         </div>
       </footer>
     </div>

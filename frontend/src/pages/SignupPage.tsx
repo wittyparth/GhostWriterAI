@@ -89,9 +89,9 @@ export default function SignupPage() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              P
+              G
             </div>
-            <span className="text-xl font-semibold">PostAI</span>
+            <span className="text-xl font-semibold">GhostWriter AI</span>
           </div>
           
           <div>
@@ -240,7 +240,7 @@ export default function SignupPage() {
               
               <div className="mt-8 p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm italic text-muted-foreground">
-                  "PostAI helped me grow from 100 to 10,000 impressions per post in just 2 weeks."
+                  "GhostWriter AI helped me grow from 100 to 10,000 impressions per post in just 2 weeks."
                 </p>
                 <div className="flex items-center gap-2 mt-3">
                   <div className="h-8 w-8 rounded-full bg-muted" />

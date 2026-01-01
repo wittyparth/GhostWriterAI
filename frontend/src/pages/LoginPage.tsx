@@ -83,9 +83,9 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              P
+              G
             </div>
-            <span className="text-xl font-semibold">PostAI</span>
+            <span className="text-xl font-semibold">GhostWriter AI</span>
           </div>
           
           <div>
