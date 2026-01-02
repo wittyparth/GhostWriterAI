@@ -7,6 +7,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import AppLayout from "./components/layout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import PostGeneratorPage from "./pages/PostGeneratorPage";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             
             {/* Protected App Routes */}
             <Route path="/app" element={

@@ -270,13 +270,165 @@ async def login(
     )
 
 
+@router.get("/google/login")
+async def google_login_redirect():
+    """
+    Initiate Google OAuth flow.
+    Redirects user to Google's consent screen.
+    """
+    if not settings.google_client_id or not settings.google_client_secret:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google OAuth not configured"
+        )
+    
+    # Build Google OAuth URL
+    google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
+    params = {
+        "client_id": settings.google_client_id,
+        "redirect_uri": settings.google_redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    
+    query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+    redirect_url = f"{google_auth_url}?{query_string}"
+    
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=redirect_url)
+
+
+@router.get("/google/callback")
+async def google_callback(
+    code: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Handle Google OAuth callback.
+    Exchanges authorization code for tokens and creates/logs in user.
+    Redirects to frontend with JWT tokens.
+    """
+    import httpx
+    
+    if not settings.google_client_id or not settings.google_client_secret:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google OAuth not configured"
+        )
+    
+    try:
+        # Exchange authorization code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(
+                token_url,
+                data={
+                    "code": code,
+                    "client_id": settings.google_client_id,
+                    "client_secret": settings.google_client_secret,
+                    "redirect_uri": settings.google_redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+            )
+            
+            if token_response.status_code != 200:
+                logger.error(f"Google token exchange failed: {token_response.text}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to exchange authorization code"
+                )
+            
+            token_data = token_response.json()
+            google_access_token = token_data.get("access_token")
+            
+            # Get user info from Google
+            userinfo_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {google_access_token}"}
+            )
+            
+            if userinfo_response.status_code != 200:
+                logger.error(f"Failed to get user info: {userinfo_response.text}")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to get user information"
+                )
+            
+            user_info = userinfo_response.json()
+            email = user_info.get("email")
+            name = user_info.get("name", "")
+            
+            if not email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email not provided by Google"
+                )
+        
+        # Check if user exists
+        stmt = select(User).where(User.email == email)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            # Create new user
+            random_pass = bcrypt.hashpw(uuid4().hex.encode(), bcrypt.gensalt()).decode()
+            
+            user = User(
+                name=name,
+                email=email,
+                linkedin_profile_url=random_pass,
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            logger.info(f"New user registered via Google: {email}")
+        else:
+            logger.info(f"User logged in via Google: {email}")
+        
+        # Generate JWT tokens
+        access_token = create_access_token(str(user.user_id))
+        refresh_token = create_refresh_token(str(user.user_id))
+        
+        # Redirect to frontend with tokens in URL params
+        from fastapi.responses import RedirectResponse
+        from urllib.parse import urlencode
+        
+        frontend_callback_url = f"{settings.frontend_url}/auth/callback"
+        params = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user_id": str(user.user_id),
+            "email": user.email,
+            "name": user.name,
+        }
+        redirect_url = f"{frontend_callback_url}?{urlencode(params)}"
+        
+        return RedirectResponse(url=redirect_url)
+        
+    except httpx.RequestError as e:
+        logger.error(f"Network error during Google auth: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Network error during authentication"
+        )
+    except Exception as e:
+        logger.error(f"Google login error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
+
+
 @router.post("/google", response_model=TokenResponse)
-async def google_login(
+async def google_login_token(
     request: GoogleLoginRequest,
     session: AsyncSession = Depends(get_session),
 ):
     """
-    Login or register with Google OAuth.
+    Login with Google ID token (for popup flow).
+    This is an alternative to the redirect flow.
     """
     try:
         # Verify Google ID token
@@ -296,7 +448,6 @@ async def google_login(
         
         if not user:
             # Create new user
-            # Generate a random password hash since they use Google
             random_pass = bcrypt.hashpw(uuid4().hex.encode(), bcrypt.gensalt()).decode()
             
             user = User(
@@ -309,7 +460,7 @@ async def google_login(
             await session.refresh(user)
             logger.info(f"New user registered via Google: {email}")
         else:
-            logger.info(f"User logged in via Google: {email}")
+            logger.info(f"User logged in via Google: {email}}")
         
         # Generate tokens
         access_token = create_access_token(str(user.user_id))

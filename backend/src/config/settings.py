@@ -105,6 +105,14 @@ class Settings(BaseSettings):
         default=None,
         description="Google OAuth Client ID",
     )
+    google_client_secret: str | None = Field(
+        default=None,
+        description="Google OAuth Client Secret",
+    )
+    google_redirect_uri: str = Field(
+        default="http://localhost:8000/api/v1/auth/google/callback",
+        description="Google OAuth Redirect URI",
+    )
     
     # ========== Cost Management ==========
     daily_cost_budget: float = Field(
