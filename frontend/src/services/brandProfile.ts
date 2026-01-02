@@ -25,24 +25,86 @@ export interface VoiceTone {
 export interface BrandProfile {
   profile_id: string;
   user_id: string;
-  name: string;
-  title?: string;
-  bio?: string;
+  
+  // Professional Context
+  professional_title?: string;
+  industry?: string;
+  years_of_experience?: number;
+  company_name?: string;
+  linkedin_profile_url?: string;
+  
+  // Content Strategy
   content_pillars: ContentPillar[];
   target_audience?: string;
+  audience_pain_points: string[];
+  desired_outcome?: string;
+  expertise_areas: string[];
+  
+  // Voice & Personality
+  brand_voice?: string;
+  writing_style?: string;
+  personality_traits: string[];
+  words_to_use: string[];
+  words_to_avoid: string[];
+  sample_posts: string[];
   voice_tone: VoiceTone;
+  
+  // Goals & Metrics
+  primary_goal?: string;
+  posting_frequency?: string;
+  ideal_engagement_type?: string;
+  
+  // Differentiators
+  unique_positioning?: string;
+  unique_story?: string;
+  unique_perspective?: string;
+  achievements: string[];
+  personal_experiences: string[];
+  
+  // Visual
   brand_colors: string[];
+  
   created_at: string;
   updated_at?: string;
 }
 
 export interface BrandProfileInput {
-  name?: string;
-  title?: string;
-  bio?: string;
+  // Professional Context
+  professional_title?: string;
+  industry?: string;
+  years_of_experience?: number;
+  company_name?: string;
+  linkedin_profile_url?: string;
+  
+  // Content Strategy
   content_pillars?: ContentPillar[];
   target_audience?: string;
+  audience_pain_points?: string[];
+  desired_outcome?: string;
+  expertise_areas?: string[];
+  
+  // Voice & Personality
+  brand_voice?: string;
+  writing_style?: string;
+  personality_traits?: string[];
+  words_to_use?: string[];
+  words_to_avoid?: string[];
+  sample_posts?: string[];
   voice_tone?: VoiceTone;
+  
+  // Goals & Metrics
+  primary_goal?: string;
+  posting_frequency?: string;
+  ideal_engagement_type?: string;
+  
+  // Differentiators
+  unique_positioning?: string;
+  unique_story?: string;
+  unique_perspective?: string;
+  achievements?: string[];
+  personal_experiences?: string[];
+  
+  // Visual
   brand_colors?: string[];
 }
 
@@ -54,6 +116,7 @@ export interface ProfileSummary {
   voice_description?: string;
   summary?: string;
 }
+
 
 // ============ API Functions ============
 
