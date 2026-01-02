@@ -76,6 +76,23 @@ export function isAuthenticated(): boolean {
 
 // ============ Auth API Functions ============
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
+
 async function authFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -99,20 +116,53 @@ async function authFetch<T>(
   });
 
   if (response.status === 401) {
-    // Try to refresh token
-    const refreshed = await tryRefreshToken();
-    if (refreshed) {
-      // Retry request with new token
-      headers['Authorization'] = `Bearer ${getAccessToken()}`;
-      const retryResponse = await fetch(url, { ...options, headers });
-      if (!retryResponse.ok) {
-        const errorData = await retryResponse.json().catch(() => ({}));
-        throw new ApiError(retryResponse.status, errorData.detail || 'Request failed', errorData);
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+        .then((newToken) => {
+          headers['Authorization'] = `Bearer ${newToken}`;
+          return authFetch<T>(endpoint, { ...options, headers });
+        })
+        .catch((err) => {
+          return Promise.reject(err);
+        });
+    }
+
+    isRefreshing = true;
+
+    try {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        const newToken = getAccessToken();
+        processQueue(null, newToken);
+        isRefreshing = false;
+        
+        // Retry original request
+        headers['Authorization'] = `Bearer ${newToken}`;
+        const retryResponse = await fetch(url, { ...options, headers });
+        
+        if (!retryResponse.ok) {
+           const errorData = await retryResponse.json().catch(() => ({}));
+           throw new ApiError(retryResponse.status, errorData.detail || 'Request failed', errorData);
+        }
+        
+        if (retryResponse.status === 204) {
+          return {} as T;
+        }
+        return retryResponse.json();
+      } else {
+        clearTokens();
+        const err = new ApiError(401, 'Session expired. Please login again.');
+        processQueue(err, null);
+        throw err;
       }
-      return retryResponse.json();
-    } else {
-      clearTokens();
-      throw new ApiError(401, 'Session expired. Please login again.');
+    } catch (error) {
+      processQueue(error, null);
+      isRefreshing = false;
+      throw error;
+    } finally {
+      isRefreshing = false;
     }
   }
 
