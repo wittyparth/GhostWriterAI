@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
+import { NavLink, Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Sparkles,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
+import { useAuthStore } from "@/stores/authStore";
 import { CreditDisplay } from "@/components/shared/CreditDisplay";
 
 const navItems = [
@@ -34,6 +34,13 @@ export default function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -119,6 +126,7 @@ export default function AppLayout() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={handleLogout}
             className={cn(
               "w-full justify-start gap-2 text-muted-foreground hover:text-foreground",
               sidebarCollapsed && "justify-center"
