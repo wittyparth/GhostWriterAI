@@ -19,6 +19,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { Analytics } from "@vercel/analytics/react";
 
 const queryClient = new QueryClient();
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <Analytics />
       </GoogleOAuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
