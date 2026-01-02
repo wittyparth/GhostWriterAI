@@ -70,7 +70,12 @@ dmypy.json
 data/
 !data/.gitkeep
 *.csv
-*.json
+# Ignore data JSON files but allow config files
+!package.json
+!package-lock.json
+!tsconfig.json
+!vercel.json
+!fly.toml
 
 # Logs
 logs/

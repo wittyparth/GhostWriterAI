@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# Type checking
+.mypy_cache/
+
+# Git
+.git/
+.gitignore
+
+# Local env
+.env
+.env.local
+
+# Development
+*.log
+logs/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+docs/
