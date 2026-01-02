@@ -579,7 +579,7 @@ export default function BrandProfilePage() {
                     <TagInput 
                       value={form.words_to_use}
                       onChange={(v) => setForm({ ...form, words_to_use: v })}
-                      placeholder='e.g., "Here\'s the truth", "Let me share"'
+                      placeholder="e.g., Here's the truth, Let me share"
                       maxTags={10}
                     />
                   </div>
@@ -588,7 +588,7 @@ export default function BrandProfilePage() {
                     <TagInput 
                       value={form.words_to_avoid}
                       onChange={(v) => setForm({ ...form, words_to_avoid: v })}
-                      placeholder='e.g., "synergy", "leverage", "guru"'
+                      placeholder="e.g., synergy, leverage, guru"
                       maxTags={10}
                     />
                   </div>
@@ -765,7 +765,7 @@ export default function BrandProfilePage() {
                   <TagInput 
                     value={form.achievements}
                     onChange={(v) => setForm({ ...form, achievements: v })}
-                    placeholder='e.g., "Grew startup to $1M ARR", "Built 10k newsletter"'
+                    placeholder="e.g., Grew startup to $1M ARR, Built 10k newsletter"
                     maxTags={10}
                   />
                 </div>
@@ -775,7 +775,7 @@ export default function BrandProfilePage() {
                   <TagInput 
                     value={form.personal_experiences}
                     onChange={(v) => setForm({ ...form, personal_experiences: v })}
-                    placeholder='e.g., "Failed first startup", "Bootstrapped to acquisition"'
+                    placeholder="e.g., Failed first startup, Bootstrapped to acquisition"
                     maxTags={10}
                   />
                 </div>
