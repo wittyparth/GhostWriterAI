@@ -12,8 +12,9 @@ import {
   register as apiRegister, 
   logout as apiLogout,
   getCurrentUser,
-  getStoredUser,
-  isAuthenticated as checkAuth,
+  isAuthenticated as checkAuthToken,
+  clearTokens,
+  getAccessToken,
   LoginCredentials,
   RegisterCredentials,
 } from '@/services/auth';
@@ -107,6 +108,11 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Ignore logout errors
         }
+        // Clear all tokens from localStorage
+        clearTokens();
+        // Clear persisted zustand storage
+        localStorage.removeItem('auth-storage');
+        // Reset state
         set({ 
           user: null, 
           isAuthenticated: false, 
@@ -116,17 +122,24 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        if (!checkAuth()) {
+        // Check if we have a valid token in localStorage
+        const token = getAccessToken();
+        if (!token) {
+          clearTokens();
+          localStorage.removeItem('auth-storage');
           set({ user: null, isAuthenticated: false });
           return;
         }
         
         set({ isLoading: true });
         try {
+          // Validate token by fetching current user
           const user = await getCurrentUser();
           set({ user, isAuthenticated: true, isLoading: false });
         } catch {
-          // Token invalid, clear state
+          // Token invalid or expired, clear everything
+          clearTokens();
+          localStorage.removeItem('auth-storage');
           set({ 
             user: null, 
             isAuthenticated: false, 
@@ -137,7 +150,7 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({ error: null }),
       
-      setUser: (user) => set({ user }),
+      setUser: (user) => set({ user, isAuthenticated: true }),
     }),
     {
       name: 'auth-storage',

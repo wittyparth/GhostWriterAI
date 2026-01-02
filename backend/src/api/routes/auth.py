@@ -460,7 +460,7 @@ async def google_login_token(
             await session.refresh(user)
             logger.info(f"New user registered via Google: {email}")
         else:
-            logger.info(f"User logged in via Google: {email}}")
+            logger.info(f"User logged in via Google: {email}")
         
         # Generate tokens
         access_token = create_access_token(str(user.user_id))
