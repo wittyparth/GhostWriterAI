@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuthStore } from "@/stores/authStore";
 
 const features = [
   { icon: Brain, title: "5 AI Agents", description: "Validator, Strategist, Writer, Optimizer, and Quality Checker work together." },
@@ -38,6 +39,8 @@ const testimonials = [
 ];
 
 export default function LandingPage() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -51,12 +54,20 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="icon" />
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Log In</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/signup">Get Started</Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button size="sm" asChild>
+                <Link to="/app/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/login">Log In</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link to="/signup">Get Started</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>
