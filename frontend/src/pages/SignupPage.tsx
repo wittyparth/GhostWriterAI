@@ -8,12 +8,13 @@ import { ArrowRight, Mail, Lock, User, ArrowLeft, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { API_BASE_URL } from "@/services/api";
+import { API_BASE_URL } from "@/services/config";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isRegistrationSuccess, setIsRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
   
   const { register, isLoading, error, clearError, isAuthenticated } = useAuthStore();
@@ -48,8 +49,9 @@ export default function SignupPage() {
     
     const success = await register({ name, email, password });
     if (success) {
-      toast.success("Account created successfully!");
-      navigate("/app/dashboard");
+      setIsRegistrationSuccess(true);
+      toast.success("Account created! Please verify your email.");
+      // navigate("/app/dashboard"); // No longer redirect immediately
     }
   };
 
@@ -89,6 +91,33 @@ export default function SignupPage() {
             <p className="text-muted-foreground mt-2">Start creating viral LinkedIn content today</p>
           </div>
           
+          {/* Verification Sent Success View */}
+          {isRegistrationSuccess ? (
+            <div className="space-y-6 text-center">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight">Check your email</h2>
+                <p className="text-muted-foreground">
+                  We've sent a verification link to <span className="font-medium text-foreground">{email}</span>. Please click the link to activate your account.
+                </p>
+              </div>
+              <div className="pt-4 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the email? <span className="text-primary cursor-pointer hover:underline">Click to resend</span>
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate("/login")}
+                >
+                  Back to Sign In
+                </Button>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Social login */}
           <div className="space-y-3">
             <Button
@@ -178,6 +207,8 @@ export default function SignupPage() {
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
+          </>
+          )}
           
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}

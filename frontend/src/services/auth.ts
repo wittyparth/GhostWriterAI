@@ -4,7 +4,7 @@
  * Handles login, registration, token management, and authentication state.
  */
 
-import { API_BASE_URL, ApiError } from './api';
+import { API_BASE_URL, ApiError } from './config';
 
 // ============ Types ============
 
@@ -222,7 +222,10 @@ export async function login(credentials: LoginCredentials): Promise<AuthTokens> 
 /**
  * Register a new account
  */
-export async function register(credentials: RegisterCredentials): Promise<AuthTokens> {
+/**
+ * Register a new account
+ */
+export async function register(credentials: RegisterCredentials): Promise<{ message: string }> {
   const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -234,9 +237,45 @@ export async function register(credentials: RegisterCredentials): Promise<AuthTo
     throw new ApiError(response.status, errorData.detail || 'Registration failed', errorData);
   }
 
+  return response.json();
+}
+
+/**
+ * Verify email
+ */
+export async function verifyEmail(token: string): Promise<AuthTokens> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/verify-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, errorData.detail || 'Verification failed', errorData);
+  }
+
   const tokens: AuthTokens = await response.json();
   storeTokens(tokens);
   return tokens;
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/v1/auth/resend-verification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(response.status, errorData.detail || 'Failed to resend email', errorData);
+  }
+
+  return response.json();
 }
 
 /**

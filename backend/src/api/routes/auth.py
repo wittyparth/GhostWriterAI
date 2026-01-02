@@ -28,6 +28,7 @@ from google.auth.transport import requests
 from src.database import get_session
 from src.database.models import User, BrandProfile
 from src.config.settings import get_settings
+from src.services.email import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,14 @@ class RefreshTokenRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     name: Optional[str] = None
     linkedin_profile_url: Optional[str] = None
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 
 # ============ Utility Functions ============
@@ -171,7 +180,7 @@ async def get_current_user_optional(
 
 # ============ API Endpoints ============
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register")
 async def register(
     request: RegisterRequest,
     session: AsyncSession = Depends(get_session),
@@ -190,33 +199,40 @@ async def register(
             detail="Email already registered"
         )
     
+    # Generate verification token
+    verification_token = uuid4().hex
+    token_expiry = datetime.utcnow() + timedelta(hours=24)
+    
     # Create user with hashed password
     user = User(
         name=request.name,
         email=request.email,
         linkedin_profile_url=hash_password(request.password),
+        is_verified=False,
+        verification_token=verification_token,
+        verification_token_expires_at=token_expiry
     )
     
     session.add(user)
     await session.commit()
     await session.refresh(user)
     
-    # Generate tokens
-    access_token = create_access_token(str(user.user_id))
-    refresh_token = create_refresh_token(str(user.user_id))
-    
+    # Send verification email
+    try:
+        email_service = EmailService()
+        await email_service.send_verification_email(
+            to_email=user.email,
+            name=user.name,
+            token=verification_token,
+            frontend_url=settings.frontend_url
+        )
+    except Exception as e:
+        logger.error(f"Failed to send verification email: {e}")
+        # We don't fail registration, just log error
+        
     logger.info(f"New user registered: {user.email}")
     
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user={
-            "user_id": str(user.user_id),
-            "email": user.email,
-            "name": user.name,
-            "created_at": user.created_at.isoformat(),
-        }
-    )
+    return {"message": "Registration successful. Please check your email to verify your account."}
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -236,6 +252,13 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
+        )
+        
+    # Check if verified
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please check your inbox."
         )
     
     # Verify password
@@ -268,6 +291,105 @@ async def login(
             "has_brand_profile": has_brand_profile,
         }
     )
+
+
+@router.post("/verify-email", response_model=TokenResponse)
+async def verify_email(
+    request: VerifyEmailRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Verify email address using token.
+    """
+    stmt = select(User).where(User.verification_token == request.token)
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification token"
+        )
+        
+    if user.verification_token_expires_at and user.verification_token_expires_at < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification token has expired"
+        )
+        
+    # Mark as verified
+    user.is_verified = True
+    user.verification_token = None
+    user.verification_token_expires_at = None
+    
+    await session.commit()
+    await session.refresh(user)
+    
+    # Generate tokens for auto-login
+    access_token = create_access_token(str(user.user_id))
+    refresh_token = create_refresh_token(str(user.user_id))
+    
+    # Check if user has brand profile
+    stmt = select(BrandProfile).where(BrandProfile.user_id == user.user_id)
+    result = await session.execute(stmt)
+    has_brand_profile = result.scalar_one_or_none() is not None
+    
+    logger.info(f"Email verified for user: {user.email}")
+    
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user={
+            "user_id": str(user.user_id),
+            "email": user.email,
+            "name": user.name,
+            "created_at": user.created_at.isoformat(),
+            "has_brand_profile": has_brand_profile,
+        }
+    )
+
+
+@router.post("/resend-verification")
+async def resend_verification(
+    request: ResendVerificationRequest,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Resend verification email.
+    """
+    stmt = select(User).where(User.email == request.email)
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Don't reveal if user exists
+        return {"message": "If account exists, verification email sent."}
+        
+    if user.is_verified:
+        return {"message": "Account already verified."}
+        
+    # Generate new token
+    verification_token = uuid4().hex
+    token_expiry = datetime.utcnow() + timedelta(hours=24)
+    
+    user.verification_token = verification_token
+    user.verification_token_expires_at = token_expiry
+    
+    await session.commit()
+    
+    # Send email
+    try:
+        email_service = EmailService()
+        await email_service.send_verification_email(
+            to_email=user.email,
+            name=user.name,
+            token=verification_token,
+            frontend_url=settings.frontend_url
+        )
+    except Exception as e:
+        logger.error(f"Failed to resend verification email: {e}")
+        
+    return {"message": "Verification email sent."}
 
 
 @router.get("/google/login")

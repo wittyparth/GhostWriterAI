@@ -48,3 +48,5 @@ mypy
 
 
 PyJWT
+requests
+httpx

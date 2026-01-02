@@ -1,5 +1,8 @@
 // Backend API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { API_BASE_URL, ApiError } from './config';
+import { authFetch } from './auth';
+
+export { API_BASE_URL };
 
 // ============ Types ============
 
@@ -136,33 +139,11 @@ export interface GenerationHistoryDetail {
 
 // ============ API Client ============
 
-class ApiError extends Error {
-  constructor(public status: number, message: string, public data?: any) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, errorData.detail || 'API request failed', errorData);
-  }
-
-  return response.json();
+  return authFetch<T>(endpoint, options);
 }
 
 // ============ API Functions ============

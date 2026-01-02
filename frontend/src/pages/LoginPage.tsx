@@ -8,7 +8,7 @@ import { ArrowRight, Mail, Lock, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { API_BASE_URL } from "@/services/api";
+import { API_BASE_URL } from "@/services/config";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -24,26 +25,60 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Show error toast
+  // Show error toast & check verification
   useEffect(() => {
     if (error) {
       toast.error(error);
+      if (error.toLowerCase().includes("verify")) {
+        setNeedsVerification(true);
+      }
       clearError();
     }
   }, [error, clearError]);
 
+  // ... (useEffect hooks)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!email || !password) {
       toast.error("Please fill in all fields");
       return;
     }
     
+    // Clear previous errors/states
+    setNeedsVerification(false);
+    
     const success = await login({ email, password });
     if (success) {
       toast.success("Welcome back!");
       navigate("/app/dashboard");
+    } else {
+        // useAuthStore sets the 'error' state. We can check if it contains "verified".
+        // Better yet, we can't easily check the error state immediately after await login returns check.
+        // We rely on the error useEffect or check if success is false and the store error matches.
+        // However, since state updates may be async, let's wait for component re-render.
+        // Or we can modify login to return the error object or code.
+        // For now, let's rely on the error message displayed in useEffect or the toast.
+        // Wait, if I want to show a specific UI, I need to know the error type.
+        // Let's modify the login logic slightly or catch the error message.
+        // Actually, the store `login` returns false on failure.
+    }
+  };
+
+  useEffect(() => {
+    if (error && error.toLowerCase().includes("verify")) {
+       setNeedsVerification(true);
+    }
+  }, [error]);
+
+  const handleResendVerification = async () => {
+    try {
+       const { resendVerification } = await import("@/services/auth");
+       await resendVerification(email);
+       toast.success("Verification email sent!");
+       setNeedsVerification(false);
+    } catch (err) {
+       toast.error("Failed to send email.");
     }
   };
 
@@ -161,6 +196,17 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+            
+            {needsVerification && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="w-full h-11 border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-900 dark:bg-yellow-900/10 dark:text-yellow-400"
+                onClick={handleResendVerification}
+              >
+                Resend Verification Email
+              </Button>
+            )}
           </form>
           
           <p className="text-center text-sm text-muted-foreground">

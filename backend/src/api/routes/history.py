@@ -17,7 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field
 
 from src.database import get_session
-from src.database.models import GenerationHistory
+from src.database.models import GenerationHistory, User
+from src.api.routes.auth import get_current_user
 from src.database.repositories import (
     GenerationHistoryRepository,
     GenerationEventRepository,
@@ -144,6 +145,7 @@ async def list_generation_histories(
     limit: int = 20,
     offset: int = 0,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     List all generation histories.
@@ -152,7 +154,7 @@ async def list_generation_histories(
     useful for showing generation history in a dashboard.
     """
     repo = GenerationHistoryRepository(session)
-    histories = await repo.get_all(limit=limit, offset=offset)
+    histories = await repo.get_by_user_id(user.user_id, limit=limit, offset=offset)
     
     items = []
     for h in histories:
@@ -206,6 +208,7 @@ class AnalyticsResponse(BaseModel):
 @router.get("/stats", response_model=AnalyticsResponse)
 async def get_analytics_stats(
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Get aggregated analytics data for the dashboard/analytics page.
@@ -227,6 +230,8 @@ async def get_analytics_stats(
     status_query = select(
         GenerationHistory.status, 
         func.count(GenerationHistory.history_id)
+    ).where(
+        GenerationHistory.user_id == user.user_id
     ).group_by(GenerationHistory.status)
     
     status_result = await session.execute(status_query)
@@ -237,7 +242,8 @@ async def get_analytics_stats(
     
     # Posts this week
     week_query = select(func.count(GenerationHistory.history_id)).where(
-        GenerationHistory.started_at >= week_ago
+        GenerationHistory.started_at >= week_ago,
+        GenerationHistory.user_id == user.user_id
     )
     week_result = await session.execute(week_query)
     posts_this_week = week_result.scalar() or 0
@@ -253,8 +259,9 @@ async def get_analytics_stats(
         FROM generation_history
         WHERE status = 'completed' 
         AND optimizer_output->>'quality_score' IS NOT NULL
+        AND user_id = :user_id
     """)
-    avg_score_result = await session.execute(avg_score_query)
+    avg_score_result = await session.execute(avg_score_query, {"user_id": user.user_id})
     avg_quality_score = avg_score_result.scalar() or 0.0
     
     # 2. Daily Activity (Last 30 days)
@@ -266,11 +273,12 @@ async def get_analytics_stats(
             AVG(CAST(optimizer_output->>'quality_score' AS FLOAT)) as avg_score
         FROM generation_history
         WHERE started_at >= :month_ago
+        AND user_id = :user_id
         GROUP BY date_str
         ORDER BY date_str ASC
     """)
     
-    daily_result = await session.execute(daily_query, {"month_ago": month_ago})
+    daily_result = await session.execute(daily_query, {"month_ago": month_ago, "user_id": user.user_id})
     daily_data = []
     
     # map results to daily_Activity
@@ -290,9 +298,10 @@ async def get_analytics_stats(
             COALESCE(final_post->>'format', preferred_format, 'unknown') as fmt,
             COUNT(*)
         FROM generation_history
+        WHERE user_id = :user_id
         GROUP BY fmt
     """)
-    format_result = await session.execute(format_query)
+    format_result = await session.execute(format_query, {"user_id": user.user_id})
     format_dist = [{"name": row[0].capitalize(), "value": row[1]} for row in format_result.fetchall()]
     
     # Status Distribution formatted
@@ -307,10 +316,11 @@ async def get_analytics_stats(
         FROM generation_history
         WHERE status = 'completed' 
         AND optimizer_output->>'quality_score' IS NOT NULL
+        AND user_id = :user_id
         ORDER BY score DESC
         LIMIT 5
     """)
-    top_result = await session.execute(top_posts_query)
+    top_result = await session.execute(top_posts_query, {"user_id": user.user_id})
     top_posts = [
         {
             "idea": row[0][:60] + "..." if len(row[0]) > 60 else row[0], 
@@ -338,6 +348,7 @@ async def get_analytics_stats(
 async def get_generation_history(
     history_id: str,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Get complete generation history by ID.
@@ -350,6 +361,9 @@ async def get_generation_history(
     
     if not history:
         raise HTTPException(status_code=404, detail="History not found")
+        
+    if history.user_id != user.user_id:
+         raise HTTPException(status_code=403, detail="Not authorized to view this history")
     
     # Build events list
     events = []
@@ -411,6 +425,7 @@ async def get_generation_history(
 async def get_history_by_post(
     post_id: str,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Get generation history by post ID.
@@ -422,15 +437,19 @@ async def get_history_by_post(
     
     if not history:
         raise HTTPException(status_code=404, detail="History not found for this post")
+        
+    if history.user_id != user.user_id:
+         raise HTTPException(status_code=403, detail="Not authorized to view this history")
     
     # Reuse the same logic
-    return await get_generation_history(str(history.history_id), session)
+    return await get_generation_history(str(history.history_id), session, user)
 
 
 @router.get("/{history_id}/events")
 async def get_generation_events(
     history_id: str,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Get just the timeline events for a generation.
@@ -438,6 +457,16 @@ async def get_generation_events(
     Returns chronological list of all events that occurred
     during the generation process.
     """
+    # Check ownership first
+    history_repo = GenerationHistoryRepository(session)
+    history = await history_repo.get_by_id(UUID(history_id))
+    
+    if not history:
+        raise HTTPException(status_code=404, detail="History not found")
+        
+    if history.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this history")
+    
     repo = GenerationEventRepository(session)
     events = await repo.get_by_history_id(UUID(history_id))
     
@@ -468,6 +497,7 @@ async def get_agent_output(
     history_id: str,
     agent_name: str,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Get output from a specific agent for a generation.
@@ -479,6 +509,9 @@ async def get_agent_output(
     
     if not history:
         raise HTTPException(status_code=404, detail="History not found")
+        
+    if history.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this history")
     
     agent_outputs = {
         "validator": history.validator_output,
@@ -519,6 +552,7 @@ async def update_selected_hook(
     history_id: str,
     hook_index: int,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Update which hook variation the user selected.
@@ -529,6 +563,15 @@ async def update_selected_hook(
         raise HTTPException(status_code=400, detail="hook_index must be 0, 1, or 2")
     
     repo = GenerationHistoryRepository(session)
+    
+    # Check ownership
+    history = await repo.get_by_id(UUID(history_id))
+    if not history:
+        raise HTTPException(status_code=404, detail="History not found")
+        
+    if history.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this history")
+        
     history = await repo.update_selected_hook(UUID(history_id), hook_index)
     
     if not history:

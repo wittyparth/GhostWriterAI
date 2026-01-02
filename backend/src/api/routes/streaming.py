@@ -15,6 +15,7 @@ from typing import AsyncGenerator
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from src.database import get_session
 from src.database.repositories.base import PostRepository

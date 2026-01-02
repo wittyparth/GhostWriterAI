@@ -114,6 +114,28 @@ class Settings(BaseSettings):
         description="Google OAuth Redirect URI",
     )
     
+    # ========== Email Configuration (SMTP) ==========
+    smtp_host: str = Field(
+        default="smtp-relay.brevo.com",
+        description="SMTP Server Host",
+    )
+    smtp_port: int = Field(
+        default=587,
+        description="SMTP Server Port",
+    )
+    smtp_user: str | None = Field(
+        default=None,
+        description="SMTP Username (Login)",
+    )
+    smtp_password: SecretStr | None = Field(
+        default=None,
+        description="SMTP Password",
+    )
+    from_email: str = Field(
+        default="onboarding@resend.dev",
+        description="Sender email address",
+    )
+    
     # ========== Cost Management ==========
     daily_cost_budget: float = Field(
         default=10.0,

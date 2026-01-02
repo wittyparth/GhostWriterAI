@@ -47,6 +47,11 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Email Verification
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_token = Column(String(255), nullable=True)
+    verification_token_expires_at = Column(DateTime, nullable=True)
+    
     # Relationships
     brand_profile = relationship("BrandProfile", back_populates="user", uselist=False)
     posts = relationship("Post", back_populates="user")

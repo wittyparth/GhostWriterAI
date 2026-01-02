@@ -236,6 +236,7 @@ async def get_status(post_id: str):
 async def get_post(
     post_id: str,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """Get a generated post by ID."""
     post_repo = PostRepository(session)
@@ -243,6 +244,9 @@ async def get_post(
     
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    
+    if post.user_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this post")
     
     return {
         "post_id": str(post.post_id),

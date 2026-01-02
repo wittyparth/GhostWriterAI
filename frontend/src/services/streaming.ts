@@ -4,7 +4,8 @@
  * Handles Server-Sent Events from the backend streaming API
  */
 
-import { API_BASE_URL, IdeaInput } from './api';
+import { IdeaInput } from './api';
+import { API_BASE_URL } from './config';
 import { getAccessToken } from './auth';
 
 // ============ Types for Streaming ============

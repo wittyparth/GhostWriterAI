@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import AppLayout from "./components/layout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
 import PostGeneratorPage from "./pages/PostGeneratorPage";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             
             {/* Protected App Routes */}
             <Route path="/app" element={

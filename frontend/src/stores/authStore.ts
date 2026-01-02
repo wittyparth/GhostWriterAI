@@ -85,10 +85,9 @@ export const useAuthStore = create<AuthState>()(
       register: async (credentials) => {
         set({ isLoading: true, error: null });
         try {
-          const tokens = await apiRegister(credentials);
+          await apiRegister(credentials);
+          // Don't log in automatically anymore
           set({ 
-            user: tokens.user, 
-            isAuthenticated: true, 
             isLoading: false 
           });
           return true;
