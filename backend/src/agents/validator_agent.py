@@ -45,11 +45,31 @@ Respond in JSON format:
 IDEA: {idea}
 
 USER'S BRAND PROFILE:
+- Professional Title: {brand_profile.get('professional_title', 'Not specified')}
+- Industry: {brand_profile.get('industry', 'Not specified')}
+- Company: {brand_profile.get('company_name', 'Not specified')}
+
+CONTENT STRATEGY:
 - Content Pillars: {brand_profile.get('content_pillars', ['Not specified'])}
 - Target Audience: {brand_profile.get('target_audience', 'Not specified')}
-- Brand Voice: {brand_profile.get('brand_voice', 'Not specified')}
+- Audience Pain Points: {brand_profile.get('audience_pain_points', [])}
+- Expertise Areas: {brand_profile.get('expertise_areas', [])}
+
+BRAND VOICE:
+- Voice: {brand_profile.get('brand_voice', 'Not specified')}
+- Writing Style: {brand_profile.get('writing_style', 'Not specified')}
+
+PRIMARY GOAL: {brand_profile.get('primary_goal', 'thought_leadership')}
+UNIQUE POSITIONING: {brand_profile.get('unique_positioning', 'Not specified')}
+
+Evaluate if this idea:
+1. Aligns with their content pillars and expertise
+2. Addresses their target audience's pain points
+3. Supports their primary goal
+4. Can be written in their voice
 
 Provide your evaluation as JSON."""
         
         result = await self.generate_structured(prompt)
         return ValidatorOutput(**result)
+

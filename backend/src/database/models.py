@@ -60,14 +60,42 @@ class BrandProfile(Base):
     profile_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id"), unique=True, nullable=False)
     
-    # Content strategy
-    content_pillars = Column(JSONB, default=list)  # ["Building in Public", "SaaS Marketing"]
-    target_audience = Column(Text, nullable=True)
-    brand_voice = Column(Text, nullable=True)  # "Conversational, data-driven, authentic"
-    tone_preferences = Column(JSONB, default=dict)
-    unique_positioning = Column(Text, nullable=True)
+    # ========== Professional Context ==========
+    professional_title = Column(String(200), nullable=True)  # "Founder @ XYZ"
+    industry = Column(String(100), nullable=True)  # "SaaS", "Healthcare", "FinTech"
+    years_of_experience = Column(Integer, nullable=True)
+    company_name = Column(String(200), nullable=True)
+    linkedin_profile_url = Column(Text, nullable=True)
     
-    # Visual guidelines
+    # ========== Content Strategy ==========
+    content_pillars = Column(JSONB, default=list)  # ["Building in Public", "SaaS Marketing"]
+    target_audience = Column(Text, nullable=True)  # "B2B SaaS founders and marketers"
+    audience_pain_points = Column(JSONB, default=list)  # ["scaling", "hiring", "fundraising"]
+    desired_outcome = Column(Text, nullable=True)  # What action they want readers to take
+    expertise_areas = Column(JSONB, default=list)  # ["growth hacking", "product management"]
+    
+    # ========== Voice & Personality ==========
+    brand_voice = Column(Text, nullable=True)  # "Conversational, data-driven, authentic"
+    writing_style = Column(String(50), nullable=True)  # "story-driven", "data-focused", "contrarian"
+    personality_traits = Column(JSONB, default=list)  # ["witty", "empathetic", "direct"]
+    words_to_use = Column(JSONB, default=list)  # Phrases they love
+    words_to_avoid = Column(JSONB, default=list)  # Language to never use
+    sample_posts = Column(JSONB, default=list)  # 3-5 of their best posts
+    tone_preferences = Column(JSONB, default=dict)
+    
+    # ========== Goals & Metrics ==========
+    primary_goal = Column(String(50), nullable=True)  # "thought_leadership", "lead_generation", "hiring"
+    posting_frequency = Column(String(50), nullable=True)  # "daily", "3x_week", "weekly"
+    ideal_engagement_type = Column(String(50), nullable=True)  # "comments", "shares", "dms"
+    
+    # ========== Differentiators ==========
+    unique_positioning = Column(Text, nullable=True)
+    unique_story = Column(Text, nullable=True)  # Their origin story/journey
+    unique_perspective = Column(Text, nullable=True)  # What makes their take different
+    achievements = Column(JSONB, default=list)  # ["Grew to $1M ARR", "Built 10k newsletter"]
+    personal_experiences = Column(JSONB, default=list)  # Stories they can tell
+    
+    # ========== Visual (Optional) ==========
     visual_guidelines = Column(JSONB, default=dict)
     brand_colors = Column(JSONB, default=list)  # ["#1E3A8A", "#FBBF24"]
     

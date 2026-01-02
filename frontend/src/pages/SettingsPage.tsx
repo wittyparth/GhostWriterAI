@@ -8,37 +8,88 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { User, Shield, Trash2, Save, Camera, AlertTriangle, Bell, Key } from "lucide-react";
+import { User, Shield, Trash2, Save, Camera, AlertTriangle, Bell, Key, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser } from "@/services/auth";
+import { getCurrentUser, changePassword, deleteAccount } from "@/services/auth";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: "", email: "" });
   const { data: user, isLoading } = useQuery({ queryKey: ["me"], queryFn: getCurrentUser });
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
 
   useEffect(() => {
     if (user) {
       setProfile({ name: user.name, email: user.email });
     }
   }, [user]);
+  
   const [notifications, setNotifications] = useState({ email: true, push: false, weekly: true });
+  
+  // Password change state
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Delete account state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleSaveProfile = () => {
     toast.success("Profile updated successfully!");
   };
 
-  const handleDeleteAccount = () => {
-    if (deleteConfirmation === "DELETE") {
-      toast.success("Account deletion initiated...");
-      setDeleteDialogOpen(false);
-    } else {
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      toast.success("Password changed successfully!");
+      setPasswordDialogOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== "DELETE") {
       toast.error("Please type DELETE to confirm");
+      return;
+    }
+    
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount(deletePassword);
+      toast.success("Account deleted successfully");
+      await logout();
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete account");
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -132,7 +183,8 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
+                    <Input id="email" type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} disabled />
+                    <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                   </div>
                 </div>
                 <div className="flex justify-end">
@@ -152,7 +204,54 @@ export default function SettingsPage() {
                   <h3 className="font-semibold">Password</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">Change your password to keep your account secure.</p>
-                <Button variant="outline">Change Password</Button>
+                
+                <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">Change Password</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                      <DialogDescription>Enter your current password and choose a new one.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input 
+                          id="current-password" 
+                          type="password" 
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input 
+                          id="new-password" 
+                          type="password" 
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input 
+                          id="confirm-password" 
+                          type="password" 
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="ghost" onClick={() => setPasswordDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+                        {isChangingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Change Password
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           </motion.div>
@@ -213,13 +312,37 @@ export default function SettingsPage() {
                       <DialogTitle>Are you absolutely sure?</DialogTitle>
                       <DialogDescription>This action cannot be undone. This will permanently delete your account and remove all your data from our servers.</DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                      <Label htmlFor="delete-confirmation">Type <span className="font-bold">DELETE</span> to confirm</Label>
-                      <Input id="delete-confirmation" className="mt-2" value={deleteConfirmation} onChange={(e) => setDeleteConfirmation(e.target.value)} placeholder="DELETE" />
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="delete-password">Enter your password</Label>
+                        <Input 
+                          id="delete-password" 
+                          type="password"
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          placeholder="Your password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="delete-confirmation">Type <span className="font-bold">DELETE</span> to confirm</Label>
+                        <Input 
+                          id="delete-confirmation" 
+                          value={deleteConfirmation} 
+                          onChange={(e) => setDeleteConfirmation(e.target.value)} 
+                          placeholder="DELETE" 
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                      <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteConfirmation !== "DELETE"}>Delete Account</Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={handleDeleteAccount} 
+                        disabled={deleteConfirmation !== "DELETE" || !deletePassword || isDeletingAccount}
+                      >
+                        {isDeletingAccount && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Delete Account
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>

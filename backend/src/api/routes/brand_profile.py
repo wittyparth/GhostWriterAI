@@ -43,25 +43,87 @@ class VoiceTone(BaseModel):
 
 
 class BrandProfileRequest(BaseModel):
-    name: Optional[str] = None
-    title: Optional[str] = None
-    bio: Optional[str] = None
+    # Professional Context
+    professional_title: Optional[str] = None
+    industry: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    company_name: Optional[str] = None
+    linkedin_profile_url: Optional[str] = None
+    
+    # Content Strategy
     content_pillars: Optional[list[ContentPillar]] = None
     target_audience: Optional[str] = None
+    audience_pain_points: Optional[list[str]] = None
+    desired_outcome: Optional[str] = None
+    expertise_areas: Optional[list[str]] = None
+    
+    # Voice & Personality
+    brand_voice: Optional[str] = None
+    writing_style: Optional[str] = None  # "story-driven", "data-focused", "contrarian"
+    personality_traits: Optional[list[str]] = None
+    words_to_use: Optional[list[str]] = None
+    words_to_avoid: Optional[list[str]] = None
+    sample_posts: Optional[list[str]] = None
     voice_tone: Optional[VoiceTone] = None
+    
+    # Goals & Metrics
+    primary_goal: Optional[str] = None  # "thought_leadership", "lead_generation", "hiring"
+    posting_frequency: Optional[str] = None
+    ideal_engagement_type: Optional[str] = None
+    
+    # Differentiators
+    unique_positioning: Optional[str] = None
+    unique_story: Optional[str] = None
+    unique_perspective: Optional[str] = None
+    achievements: Optional[list[str]] = None
+    personal_experiences: Optional[list[str]] = None
+    
+    # Visual
     brand_colors: Optional[list[str]] = None
 
 
 class BrandProfileResponse(BaseModel):
     profile_id: str
     user_id: str
-    name: str
-    title: Optional[str] = None
-    bio: Optional[str] = None
+    
+    # Professional Context
+    professional_title: Optional[str] = None
+    industry: Optional[str] = None
+    years_of_experience: Optional[int] = None
+    company_name: Optional[str] = None
+    linkedin_profile_url: Optional[str] = None
+    
+    # Content Strategy
     content_pillars: list[ContentPillar]
     target_audience: Optional[str] = None
+    audience_pain_points: list[str]
+    desired_outcome: Optional[str] = None
+    expertise_areas: list[str]
+    
+    # Voice & Personality
+    brand_voice: Optional[str] = None
+    writing_style: Optional[str] = None
+    personality_traits: list[str]
+    words_to_use: list[str]
+    words_to_avoid: list[str]
+    sample_posts: list[str]
     voice_tone: VoiceTone
+    
+    # Goals & Metrics
+    primary_goal: Optional[str] = None
+    posting_frequency: Optional[str] = None
+    ideal_engagement_type: Optional[str] = None
+    
+    # Differentiators
+    unique_positioning: Optional[str] = None
+    unique_story: Optional[str] = None
+    unique_perspective: Optional[str] = None
+    achievements: list[str]
+    personal_experiences: list[str]
+    
+    # Visual
     brand_colors: list[str]
+    
     created_at: str
     updated_at: Optional[str] = None
 
@@ -82,18 +144,50 @@ def _serialize_profile(profile: BrandProfile, user: User) -> dict:
     return {
         "profile_id": str(profile.profile_id),
         "user_id": str(profile.user_id),
-        "name": user.name,
-        "title": profile.unique_positioning,  # Using for title
-        "bio": profile.brand_voice,  # Using for bio
+        
+        # Professional Context
+        "professional_title": profile.professional_title,
+        "industry": profile.industry,
+        "years_of_experience": profile.years_of_experience,
+        "company_name": profile.company_name,
+        "linkedin_profile_url": profile.linkedin_profile_url,
+        
+        # Content Strategy
         "content_pillars": content_pillars,
         "target_audience": profile.target_audience,
+        "audience_pain_points": profile.audience_pain_points or [],
+        "desired_outcome": profile.desired_outcome,
+        "expertise_areas": profile.expertise_areas or [],
+        
+        # Voice & Personality
+        "brand_voice": profile.brand_voice,
+        "writing_style": profile.writing_style,
+        "personality_traits": profile.personality_traits or [],
+        "words_to_use": profile.words_to_use or [],
+        "words_to_avoid": profile.words_to_avoid or [],
+        "sample_posts": profile.sample_posts or [],
         "voice_tone": {
             "formality": tone_preferences.get("formality", 50),
             "humor": tone_preferences.get("humor", 50),
             "emotion": tone_preferences.get("emotion", 50),
             "technicality": tone_preferences.get("technicality", 50),
         },
+        
+        # Goals & Metrics
+        "primary_goal": profile.primary_goal,
+        "posting_frequency": profile.posting_frequency,
+        "ideal_engagement_type": profile.ideal_engagement_type,
+        
+        # Differentiators
+        "unique_positioning": profile.unique_positioning,
+        "unique_story": profile.unique_story,
+        "unique_perspective": profile.unique_perspective,
+        "achievements": profile.achievements or [],
+        "personal_experiences": profile.personal_experiences or [],
+        
+        # Visual
         "brand_colors": profile.brand_colors or [],
+        
         "created_at": profile.created_at.isoformat(),
         "updated_at": profile.updated_at.isoformat() if profile.updated_at else None,
     }
@@ -143,25 +237,46 @@ async def create_brand_profile(
             detail="Brand profile already exists. Use PUT to update."
         )
     
-    # Update user name if provided
-    if request.name:
-        user.name = request.name
-    
-    # Create profile
+    # Create profile with all fields
     profile = BrandProfile(
         user_id=user.user_id,
+        # Professional Context
+        professional_title=request.professional_title,
+        industry=request.industry,
+        years_of_experience=request.years_of_experience,
+        company_name=request.company_name,
+        linkedin_profile_url=request.linkedin_profile_url,
+        # Content Strategy
         content_pillars=[p.model_dump() for p in (request.content_pillars or [])],
         target_audience=request.target_audience,
-        brand_voice=request.bio,
-        unique_positioning=request.title,
+        audience_pain_points=request.audience_pain_points or [],
+        desired_outcome=request.desired_outcome,
+        expertise_areas=request.expertise_areas or [],
+        # Voice & Personality
+        brand_voice=request.brand_voice,
+        writing_style=request.writing_style,
+        personality_traits=request.personality_traits or [],
+        words_to_use=request.words_to_use or [],
+        words_to_avoid=request.words_to_avoid or [],
+        sample_posts=request.sample_posts or [],
         tone_preferences=request.voice_tone.model_dump() if request.voice_tone else {},
+        # Goals & Metrics
+        primary_goal=request.primary_goal,
+        posting_frequency=request.posting_frequency,
+        ideal_engagement_type=request.ideal_engagement_type,
+        # Differentiators
+        unique_positioning=request.unique_positioning,
+        unique_story=request.unique_story,
+        unique_perspective=request.unique_perspective,
+        achievements=request.achievements or [],
+        personal_experiences=request.personal_experiences or [],
+        # Visual
         brand_colors=request.brand_colors or [],
     )
     
     session.add(profile)
     await session.commit()
     await session.refresh(profile)
-    await session.refresh(user)
     
     logger.info(f"Brand profile created for user {user.user_id}")
     
@@ -187,31 +302,72 @@ async def update_brand_profile(
         # Create new profile
         return await create_brand_profile(request, user, session)
     
-    # Update fields
-    if request.name:
-        user.name = request.name
+    # Update Professional Context
+    if request.professional_title is not None:
+        profile.professional_title = request.professional_title
+    if request.industry is not None:
+        profile.industry = request.industry
+    if request.years_of_experience is not None:
+        profile.years_of_experience = request.years_of_experience
+    if request.company_name is not None:
+        profile.company_name = request.company_name
+    if request.linkedin_profile_url is not None:
+        profile.linkedin_profile_url = request.linkedin_profile_url
     
+    # Update Content Strategy
     if request.content_pillars is not None:
         profile.content_pillars = [p.model_dump() for p in request.content_pillars]
-    
     if request.target_audience is not None:
         profile.target_audience = request.target_audience
+    if request.audience_pain_points is not None:
+        profile.audience_pain_points = request.audience_pain_points
+    if request.desired_outcome is not None:
+        profile.desired_outcome = request.desired_outcome
+    if request.expertise_areas is not None:
+        profile.expertise_areas = request.expertise_areas
     
-    if request.bio is not None:
-        profile.brand_voice = request.bio
-    
-    if request.title is not None:
-        profile.unique_positioning = request.title
-    
+    # Update Voice & Personality
+    if request.brand_voice is not None:
+        profile.brand_voice = request.brand_voice
+    if request.writing_style is not None:
+        profile.writing_style = request.writing_style
+    if request.personality_traits is not None:
+        profile.personality_traits = request.personality_traits
+    if request.words_to_use is not None:
+        profile.words_to_use = request.words_to_use
+    if request.words_to_avoid is not None:
+        profile.words_to_avoid = request.words_to_avoid
+    if request.sample_posts is not None:
+        profile.sample_posts = request.sample_posts
     if request.voice_tone is not None:
         profile.tone_preferences = request.voice_tone.model_dump()
     
+    # Update Goals & Metrics
+    if request.primary_goal is not None:
+        profile.primary_goal = request.primary_goal
+    if request.posting_frequency is not None:
+        profile.posting_frequency = request.posting_frequency
+    if request.ideal_engagement_type is not None:
+        profile.ideal_engagement_type = request.ideal_engagement_type
+    
+    # Update Differentiators
+    if request.unique_positioning is not None:
+        profile.unique_positioning = request.unique_positioning
+    if request.unique_story is not None:
+        profile.unique_story = request.unique_story
+    if request.unique_perspective is not None:
+        profile.unique_perspective = request.unique_perspective
+    if request.achievements is not None:
+        profile.achievements = request.achievements
+    if request.personal_experiences is not None:
+        profile.personal_experiences = request.personal_experiences
+    
+    # Update Visual
     if request.brand_colors is not None:
         profile.brand_colors = request.brand_colors
     
     await session.commit()
     await session.refresh(profile)
-    await session.refresh(user)
     
     logger.info(f"Brand profile updated for user {user.user_id}")
     

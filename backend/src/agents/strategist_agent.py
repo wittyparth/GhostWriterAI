@@ -48,13 +48,37 @@ Respond in JSON:
 IDEA: {idea}
 
 BRAND PROFILE:
-- Pillars: {brand_profile.get('content_pillars', [])}
-- Audience: {brand_profile.get('target_audience', 'General professionals')}
-- Voice: {brand_profile.get('brand_voice', 'Professional')}
+- Professional Title: {brand_profile.get('professional_title', 'Professional')}
+- Industry: {brand_profile.get('industry', 'Business')}
+- Company: {brand_profile.get('company_name', '')}
+- Years of Experience: {brand_profile.get('years_of_experience', 'N/A')}
+
+CONTENT STRATEGY:
+- Content Pillars: {brand_profile.get('content_pillars', [])}
+- Target Audience: {brand_profile.get('target_audience', 'General professionals')}
+- Audience Pain Points: {brand_profile.get('audience_pain_points', [])}
+- Desired Outcome: {brand_profile.get('desired_outcome', 'Engagement')}
+- Expertise Areas: {brand_profile.get('expertise_areas', [])}
+
+VOICE & STYLE:
+- Brand Voice: {brand_profile.get('brand_voice', 'Professional')}
+- Writing Style: {brand_profile.get('writing_style', 'conversational')}
+- Personality: {brand_profile.get('personality_traits', [])}
+
+GOALS:
+- Primary Goal: {brand_profile.get('primary_goal', 'thought_leadership')}
+- Ideal Engagement: {brand_profile.get('ideal_engagement_type', 'comments')}
+
+DIFFERENTIATORS:
+- Unique Positioning: {brand_profile.get('unique_positioning', '')}
+- Unique Story: {brand_profile.get('unique_story', '')}
+- Achievements: {brand_profile.get('achievements', [])}
 
 VALIDATION NOTES: {validator_output.get('reasoning', 'Approved')}
 
-Generate a strategy with format, structure, and 3-5 clarifying questions."""
+Generate a strategy with format, structure, and 3-5 clarifying questions.
+Questions should help gather context specific to this person's expertise and audience."""
         
         result = await self.generate_structured(prompt)
         return StrategistOutput(**result)
+

@@ -618,3 +618,82 @@ async def logout():
     Logout endpoint (client should discard tokens).
     """
     return {"message": "Logged out successfully"}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+
+@router.post("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Change the current user's password.
+    
+    Requires current password for verification.
+    """
+    # Verify current password
+    stored_password = user.linkedin_profile_url  # Using this field for password hash
+    if not stored_password or not verify_password(request.current_password, stored_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect"
+        )
+    
+    # Hash and store new password
+    user.linkedin_profile_url = hash_password(request.new_password)
+    await session.commit()
+    
+    logger.info(f"Password changed for user {user.user_id}")
+    
+    return {"message": "Password changed successfully"}
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+    confirm: bool = Field(..., description="Must be true to confirm deletion")
+
+
+@router.delete("/account")
+async def delete_account(
+    request: DeleteAccountRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Permanently delete the current user's account.
+    
+    This action cannot be undone. Requires password confirmation.
+    """
+    if not request.confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please confirm account deletion by setting confirm to true"
+        )
+    
+    # Verify password
+    stored_password = user.linkedin_profile_url
+    if not stored_password or not verify_password(request.password, stored_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Password is incorrect"
+        )
+    
+    # Delete user's brand profile first (if exists)
+    stmt = select(BrandProfile).where(BrandProfile.user_id == user.user_id)
+    result = await session.execute(stmt)
+    profile = result.scalar_one_or_none()
+    if profile:
+        await session.delete(profile)
+    
+    # Delete user (cascades to other related data)
+    await session.delete(user)
+    await session.commit()
+    
+    logger.info(f"Account deleted for user {user.user_id}")
+    
+    return {"message": "Account deleted successfully"}

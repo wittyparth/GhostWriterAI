@@ -117,6 +117,39 @@ async def generate_post_with_stream(
     post_id = str(uuid4())
     events_queue: asyncio.Queue[AgentEvent | None] = asyncio.Queue()
     
+    # Fetch user's brand profile from database
+    from src.database.models import BrandProfile
+    stmt = select(BrandProfile).where(BrandProfile.user_id == user.user_id)
+    result = await session.execute(stmt)
+    profile = result.scalar_one_or_none()
+    
+    brand_profile = {}
+    if profile:
+        brand_profile = {
+            "professional_title": profile.professional_title,
+            "industry": profile.industry,
+            "years_of_experience": profile.years_of_experience,
+            "company_name": profile.company_name,
+            "content_pillars": profile.content_pillars or [],
+            "target_audience": profile.target_audience,
+            "audience_pain_points": profile.audience_pain_points or [],
+            "desired_outcome": profile.desired_outcome,
+            "expertise_areas": profile.expertise_areas or [],
+            "brand_voice": profile.brand_voice,
+            "writing_style": profile.writing_style,
+            "personality_traits": profile.personality_traits or [],
+            "words_to_use": profile.words_to_use or [],
+            "words_to_avoid": profile.words_to_avoid or [],
+            "sample_posts": profile.sample_posts or [],
+            "tone_preferences": profile.tone_preferences or {},
+            "primary_goal": profile.primary_goal,
+            "unique_positioning": profile.unique_positioning,
+            "unique_story": profile.unique_story,
+            "unique_perspective": profile.unique_perspective,
+            "achievements": profile.achievements or [],
+            "personal_experiences": profile.personal_experiences or [],
+        }
+    
     # Initialize history service
     history_service = HistoryService(session)
     
@@ -147,14 +180,14 @@ async def generate_post_with_stream(
                 post_id=post_id,
                 raw_idea=request.raw_idea,
                 preferred_format=request.preferred_format,
-                brand_profile={},
+                brand_profile=brand_profile,
                 user_id=user.user_id,
             )
             
             state, tracker = await run_generation_with_tracking(
                 raw_idea=request.raw_idea,
                 post_id=post_id,
-                brand_profile={},
+                brand_profile=brand_profile,
             )
             
             # Store state for continuation

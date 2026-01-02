@@ -47,6 +47,28 @@ Respond in JSON:
         user_answers = input_data.get("user_answers", {})
         brand_profile = input_data.get("brand_profile", {})
         
+        # Build comprehensive brand context
+        brand_context = f"""
+BRAND VOICE: {brand_profile.get('brand_voice', 'Professional and authentic')}
+WRITING STYLE: {brand_profile.get('writing_style', 'conversational')}
+PERSONALITY TRAITS: {', '.join(brand_profile.get('personality_traits', []))}
+
+AUTHOR CONTEXT:
+- Title: {brand_profile.get('professional_title', 'Professional')}
+- Industry: {brand_profile.get('industry', 'Business')}
+- Experience: {brand_profile.get('years_of_experience', 'N/A')} years
+- Company: {brand_profile.get('company_name', '')}
+
+WORDS TO USE: {', '.join(brand_profile.get('words_to_use', []))}
+WORDS TO AVOID: {', '.join(brand_profile.get('words_to_avoid', []))}
+
+UNIQUE POSITIONING: {brand_profile.get('unique_positioning', '')}
+UNIQUE PERSPECTIVE: {brand_profile.get('unique_perspective', '')}
+
+ACHIEVEMENTS TO REFERENCE: {', '.join(brand_profile.get('achievements', []))}
+PERSONAL EXPERIENCES: {', '.join(brand_profile.get('personal_experiences', []))}
+""".strip()
+        
         prompt = f"""Write a LinkedIn post based on:
 
 IDEA: {idea}
@@ -61,9 +83,10 @@ STRATEGY:
 USER'S ADDITIONAL CONTEXT:
 {user_answers}
 
-BRAND VOICE: {brand_profile.get('brand_voice', 'Professional and authentic')}
+{brand_context}
 
-Generate 3 hook variations, body content, CTA, and hashtags."""
+Generate 3 hook variations, body content, CTA, and hashtags.
+The content should feel like it was written by this specific person with their unique voice."""
         
         result = await self.generate_structured(prompt)
         return WriterOutput(**result)
