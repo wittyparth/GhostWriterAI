@@ -170,6 +170,7 @@ async def submit_answers(
     post_id: str,
     request: SubmitAnswersRequest,
     session: AsyncSession = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
     """
     Submit answers to clarifying questions and complete generation.
@@ -191,6 +192,7 @@ async def submit_answers(
         # Save to database
         post_repo = PostRepository(session)
         post = await post_repo.create(
+            user_id=user.user_id,
             raw_idea=state["raw_idea"],
             final_content=_build_final_content(final_state.get("final_post", {})),
             format=final_state.get("format", "text"),

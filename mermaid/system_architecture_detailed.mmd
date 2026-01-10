@@ -1,0 +1,133 @@
+graph TD
+    %% Global Styling
+    classDef frontend fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef backend fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#ef6c00
+    classDef storage fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    classDef external fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    classDef flow stroke:#546e7a,stroke-width:2px,color:#37474f,stroke-dasharray: 5 5
+
+    %% Actors
+    User([👤 User / Creator])
+
+    %% FRONTEND LAYER
+    subgraph Client ["🖥️ Frontend Layer (React + Vite)"]
+        direction TB
+        UI_Comp["React Components<br/>(Shadcn UI)"]:::frontend
+        
+        subgraph StateMgmt ["State & Logic"]
+            AuthStore["Auth Context"]:::frontend
+            ContentStore["Content Store"]:::frontend
+            StreamHandler["Streaming Service<br/>(SSE Handling)"]:::frontend
+        end
+    end
+
+    %% BACKEND LAYER
+    subgraph Server ["⚙️ Backend Infrastructure (FastAPI)"]
+        direction TB
+        
+        API_Gateway["API Gateway / Router"]:::backend
+        
+        subgraph Security ["Security & Middleware"]
+            AuthMiddleware["JWT Authentication"]:::backend
+            RateLimiter["Rate Limiting"]:::backend
+        end
+
+        subgraph ServiceLayer ["Business Logic Services"]
+            Svc_Auth["Auth Service"]:::backend
+            Svc_Profile["Brand Profile Service"]:::backend
+            Svc_Content["Content Service"]:::backend
+        end
+
+        %% ORCHESTRATION LAYER (The Brain)
+        subgraph Orchestration ["🧠 Orchestration Engine (LangGraph)"]
+            direction TB
+            GraphManager["State Graph Manager"]:::backend
+            WorkflowState["Shared Agent State"]:::backend
+            
+            subgraph AgentSwarm ["🤖 AI Agent Swarm"]
+                direction TB
+                
+                Validator["🛡️ Validator Agent<br/>(Quality Gate)"]:::agent
+                Strategist["ner Strategist Agent<br/>(Planner)"]:::agent
+                Writer["✍️ Writer Agent<br/>(Content Gen)"]:::agent
+                Visual["🎨 Visual Agent<br/>(Design Specs)"]:::agent
+                Optimizer["✨ Optimizer Agent<br/>(QA & Refinement)"]:::agent
+                
+                %% Agent Flow Connections
+                Validator -->|Approved| Strategist
+                Strategist -->|Strategy| Writer
+                Writer -->|Draft| Visual
+                Writer -->|Draft| Optimizer
+                Visual -->|Specs| Optimizer
+                Optimizer -->|Final Review| GraphManager
+            end
+        end
+
+        %% RAG & CONTEXT
+        subgraph RAG_System ["📚 RAG Knowledge System"]
+            Retriever["Context Retriever"]:::backend
+            Embedder["Vector Embeddings"]:::backend
+        end
+    end
+
+    %% DATA LAYER
+    subgraph DataPersistence ["💾 Data Persistence"]
+        Postgres[("🐘 PostgreSQL<br/>(User, Profiles, Content)")]:::storage
+        ChromaDB[("🧬 ChromaDB<br/>(Vector Store)")]:::storage
+        Redis[("⚡ Redis<br/>(Cache/Session)")]:::storage
+    end
+
+    %% EXTERNAL SERVICES
+    subgraph ExternalServices ["☁️ External Services"]
+        Gemini("✨ Google Gemini 1.5 Pro<br/>(LLM Inference)"):::external
+        Brevo("📧 Brevo API<br/>(Email Service)"):::external
+    end
+
+    %% CONNECTIONS
+    
+    %% User to Frontend
+    User <-->|Interacts| UI_Comp
+
+    %% Frontend Internal
+    UI_Comp <--> StateMgmt
+    StreamHandler -->|Real-time Updates| UI_Comp
+
+    %% Frontend to Backend
+    StateMgmt <-->|HTTP/REST| API_Gateway
+    StreamHandler <-->|SSE Stream| API_Gateway
+
+    %% Backend Routing
+    API_Gateway --> Security
+    Security --> ServiceLayer
+
+    %% Service Interactions
+    Svc_Auth -->|CRUD| Postgres
+    Svc_Auth -->|Send Mail| Brevo
+    
+    Svc_Profile -->|Reads/Writes| Postgres
+    Svc_Content -->|Initiates| GraphManager
+
+    %% Orchestration Flow
+    GraphManager --> WorkflowState
+    WorkflowState --> AgentSwarm
+    
+    %% Agent Dependencies
+    Strategist <-->|Query| RAG_System
+    Writer <-->|Query| RAG_System
+    
+    %% RAG Flow
+    RAG_System <-->|Semantic Search| ChromaDB
+    RAG_System <-->|Fetch Data| Postgres
+    Embedder <-->|Generate Embeddings| Gemini
+
+    %% LLM Calls
+    Validator <-->|Inference| Gemini
+    Strategist <-->|Inference| Gemini
+    Writer <-->|Inference| Gemini
+    Visual <-->|Inference| Gemini
+    Optimizer <-->|Inference| Gemini
+
+    %% Final Storage
+    GraphManager -->|Save Result| Postgres
+    GraphManager -->|Stream Events| API_Gateway

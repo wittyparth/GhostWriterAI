@@ -153,13 +153,27 @@ async function authFetch<T>(
         return retryResponse.json();
       } else {
         clearTokens();
+        // Also clear zustand persisted storage
+        localStorage.removeItem('auth-storage');
         const err = new ApiError(401, 'Session expired. Please login again.');
         processQueue(err, null);
+        // Redirect to landing page on auth failure
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
         throw err;
       }
     } catch (error) {
       processQueue(error, null);
       isRefreshing = false;
+      // If it's a 401 error, redirect to landing page
+      if (error instanceof ApiError && error.status === 401) {
+        clearTokens();
+        localStorage.removeItem('auth-storage');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
+      }
       throw error;
     } finally {
       isRefreshing = false;
